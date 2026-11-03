@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Providers } from "@/context/Providers";
 
 export const metadata = {
   title: "Home & Deco | Mueblería y Decoración",
@@ -21,9 +22,8 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full flex flex-col transition-colors duration-200">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
-

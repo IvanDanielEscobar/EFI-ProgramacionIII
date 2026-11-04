@@ -4,16 +4,16 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Xmind', system-ui, sans-serif;
+  --font-sans: 'Xmind', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Paleta Home & Deco */
+  /* Paleta Identitaria Home & Deco */
   --color-linen: #f5f1ea;
   --color-khaki: #d7c9b8;
   --color-camel: #b2967d;
   --color-cocoa: #7d5a44;
   --color-espresso: #4a342a;
 
-  /* Variables para claro / oscuro */
+  /* Variables Semánticas UI / Editorial */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -24,23 +24,25 @@
 }
 
 :root {
-  --background: #faf8f5;
+  /* Fondo cálido luminoso marfil/lino, texto espresso de alto contraste y legibilidad */
+  --background: #fdfbf7;
   --foreground: #4a342a;
   --card: #ffffff;
   --card-foreground: #4a342a;
   --muted: #f5f1ea;
   --muted-foreground: #7d5a44;
-  --border: #d7c9b8;
+  --border: #e5dacd;
 }
 
 .dark {
+  /* Fondo noche café espresso con textos lino claros y tarjetas cacao */
   --background: #18120e;
   --foreground: #f5f1ea;
-  --card: #251b16;
+  --card: #241b16;
   --card-foreground: #f5f1ea;
-  --muted: #33251e;
+  --muted: #30241d;
   --muted-foreground: #d7c9b8;
-  --border: #443229;
+  --border: #423229;
 }
 
 body {
@@ -48,4 +50,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }

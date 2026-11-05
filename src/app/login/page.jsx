@@ -4,6 +4,9 @@ import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { loginSchema } from "@/schemas/loginSchema";
 import { useAuth } from "@/context/AuthContext";
 import {
   LogIn,
@@ -14,6 +17,8 @@ import {
   CheckCircle2,
   Sparkles,
   ShieldAlert,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 function LoginFormContent() {
@@ -22,46 +27,55 @@ function LoginFormContent() {
   const redirectTarget = searchParams.get("redirect") || "/dashboard";
   const errorParam = searchParams.get("error");
 
-  const { login, isAuthenticated, isLoading: authLoading, user } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorLocal, setErrorLocal] = useState("");
-  const [enviando, setEnviando] = useState(false);
+  const [apiError, setApiError] = useState("");
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
-  // Si ya está autenticado
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+    mode: "onTouched",
+  });
+
+  // Si ya está autenticado, redirigir automáticamente según su rol
   useEffect(() => {
     if (isAuthenticated) {
       const destino = user?.es_empleado ? redirectTarget : "/";
       const timeout = setTimeout(() => {
         router.push(destino);
-      }, 1500);
+      }, 1200);
       return () => clearTimeout(timeout);
     }
   }, [isAuthenticated, user, redirectTarget, router]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorLocal("");
+  const onSubmit = async (data) => {
+    setApiError("");
 
-    if (!username.trim() || !password.trim()) {
-      setErrorLocal("Por favor completá tu usuario y contraseña.");
-      return;
-    }
+    try {
+      const result = await login(data.username, data.password);
 
-    setEnviando(true);
-    const result = await login(username.trim(), password);
-    setEnviando(false);
-
-    if (result?.success) {
-      if (result.user?.es_empleado) {
-        router.push(redirectTarget);
+      if (result?.success) {
+        if (result.user?.es_empleado) {
+          router.push(redirectTarget);
+        } else {
+          router.push("/");
+        }
       } else {
-        router.push("/");
+        setApiError(
+          result?.error || "Credenciales inválidas. Verificá tu usuario y contraseña."
+        );
       }
-    } else {
-      setErrorLocal(
-        result?.error || "Credenciales inválidas. Verificá tu usuario y contraseña."
+    } catch (err) {
+      setApiError(
+        err?.message || "Ocurrió un error inesperado al conectar con el servidor."
       );
     }
   };
@@ -134,21 +148,22 @@ function LoginFormContent() {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {errorLocal && (
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+            {/* Alerta de Error de la API */}
+            {apiError && (
               <div
                 role="alert"
                 className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300"
               >
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{errorLocal}</span>
+                <span>{apiError}</span>
               </div>
             )}
 
             {/* Campo Usuario */}
             <div className="space-y-1.5">
               <label
-                htmlFor="login-username"
+                htmlFor="username"
                 className="block text-xs font-bold uppercase tracking-wider text-espresso dark:text-linen"
               >
                 Usuario
@@ -158,23 +173,30 @@ function LoginFormContent() {
                   <User className="w-4 h-4" />
                 </div>
                 <input
-                  id="login-username"
-                  name="username"
+                  id="username"
                   type="text"
                   autoComplete="username"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
                   placeholder="Ej: admin o vendedor1"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-linen/40 dark:bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-camel focus:border-transparent transition-all min-h-[44px]"
+                  aria-invalid={errors.username ? "true" : "false"}
+                  {...register("username")}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-linen/40 dark:bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-all min-h-[44px] ${
+                    errors.username
+                      ? "border-red-400 focus:ring-red-400"
+                      : "border-border focus:ring-camel focus:border-transparent"
+                  }`}
                 />
               </div>
+              {errors.username && (
+                <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 mt-1">
+                  <span>{errors.username.message}</span>
+                </p>
+              )}
             </div>
 
             {/* Campo Contraseña */}
             <div className="space-y-1.5">
               <label
-                htmlFor="login-password"
+                htmlFor="password"
                 className="block text-xs font-bold uppercase tracking-wider text-espresso dark:text-linen"
               >
                 Contraseña
@@ -184,26 +206,46 @@ function LoginFormContent() {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
-                  id="login-password"
-                  name="password"
-                  type="password"
+                  id="password"
+                  type={mostrarPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-linen/40 dark:bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-camel focus:border-transparent transition-all min-h-[44px]"
+                  aria-invalid={errors.password ? "true" : "false"}
+                  {...register("password")}
+                  className={`w-full pl-10 pr-11 py-2.5 rounded-xl border bg-linen/40 dark:bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-all min-h-[44px] ${
+                    errors.password
+                      ? "border-red-400 focus:ring-red-400"
+                      : "border-border focus:ring-camel focus:border-transparent"
+                  }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setMostrarPassword(!mostrarPassword)}
+                  tabIndex={-1}
+                  aria-label={mostrarPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {mostrarPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
+              {errors.password && (
+                <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 mt-1">
+                  <span>{errors.password.message}</span>
+                </p>
+              )}
             </div>
 
             {/* Botón Submit */}
             <button
               type="submit"
-              disabled={enviando || authLoading}
+              disabled={isSubmitting}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-bold text-xs uppercase tracking-wider transition-all shadow-sm min-h-[44px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {enviando || authLoading ? (
+              {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-linen dark:border-espresso border-t-transparent rounded-full animate-spin" />
                   <span>Iniciando sesión...</span>
@@ -216,6 +258,7 @@ function LoginFormContent() {
               )}
             </button>
 
+            {/* Usuarios de prueba backend DRF */}
             <div className="p-3.5 rounded-2xl bg-linen/60 dark:bg-muted/30 border border-border text-[11px] text-muted-foreground space-y-1.5">
               <p className="font-semibold text-espresso dark:text-linen flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-camel" />

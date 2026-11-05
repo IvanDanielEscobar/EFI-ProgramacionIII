@@ -9,71 +9,63 @@ import {
   MessageCircle,
   Sparkles,
   ShoppingBag,
-  AlertTriangle,
 } from "lucide-react";
+import { mueblesService } from "@/services/api";
+import { Badge } from "@/components/Badge";
+import { Alert } from "@/components/Alert";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
-
-async function obtenerProducto(id) {
+export async function generateMetadata({ params }) {
+  const { id } = await params;
   try {
-    const res = await fetch(`${API_BASE_URL}/productos/${id}/`, {
-      cache: "no-store",
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      return { producto: data, error: null };
-    }
-
+    const producto = await mueblesService.getById(id);
     return {
-      producto: null,
-      error: `No fue posible encontrar el producto (código de respuesta ${res.status}).`,
+      title: `${producto?.nombre || "Mueble"} | Home & Deco`,
+      description:
+        producto?.descripcion?.slice(0, 150) || "Detalle de mueble en Home & Deco.",
     };
   } catch {
     return {
-      producto: null,
-      error: "La API no responde en este momento. Por favor intentá nuevamente más tarde.",
+      title: "Mueble de Colección | Home & Deco",
+      description: "Detalle de mueble en Home & Deco.",
     };
   }
 }
 
-export async function generateMetadata({ params }) {
-  const { id } = await params;
-  const { producto } = await obtenerProducto(id);
-  return {
-    title: `${producto?.nombre || "Mueble"} | Home & Deco`,
-    description:
-      producto?.descripcion?.slice(0, 150) || "Detalle de mueble en Home & Deco.",
-  };
-}
-
 export default async function DetalleProductoPage({ params }) {
   const { id } = await params;
-  const { producto, error } = await obtenerProducto(id);
+  let producto = null;
+  let error = null;
+
+  try {
+    producto = await mueblesService.getById(id);
+  } catch (err) {
+    error = err.message || "No se pudo recuperar la información de este mueble.";
+  }
 
   // Alerta si la API no responde o no se encuentra el mueble
   if (error || !producto) {
     return (
       <div className="w-full bg-background min-h-screen py-16 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
         <div className="max-w-xl mx-auto space-y-6 text-center">
-          <div
-            role="alert"
-            className="p-5 rounded-2xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-sm space-y-2 text-left"
+          <Alert
+            variant="warning"
+            title="Aviso del servidor"
+            action={
+              <Link
+                href="/catalogo"
+                className="text-xs font-bold underline hover:opacity-80"
+              >
+                Volver
+              </Link>
+            }
           >
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <span className="font-bold">Aviso del servidor:</span>
-            </div>
-            <p className="text-xs sm:text-sm text-amber-800/90 dark:text-amber-300/90">
-              {error || "El producto solicitado no está disponible actualmente."}
-            </p>
-          </div>
+            {error || "El producto solicitado no está disponible actualmente."}
+          </Alert>
 
           <div>
             <Link
               href="/catalogo"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso text-xs font-semibold uppercase tracking-wider transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso text-xs font-semibold uppercase tracking-wider transition-colors shadow-2xs"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Volver al Catálogo</span>
@@ -84,13 +76,26 @@ export default async function DetalleProductoPage({ params }) {
     );
   }
 
+  // Formato de precio en pesos argentinos
+  const precioFormateado = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(producto.precio || 0);
+
+  const valorCuota = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(Math.round((producto.precio || 0) / 6));
+
   return (
     <div className="w-full bg-background min-h-screen py-8 sm:py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Breadcrumb */}
         <nav
           aria-label="Ruta de navegación"
-          className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground"
+          className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap"
         >
           <Link
             href="/"
@@ -112,12 +117,12 @@ export default async function DetalleProductoPage({ params }) {
                 href={`/catalogo?categoria=${encodeURIComponent(producto.categoria)}`}
                 className="hover:text-espresso dark:hover:text-linen transition-colors"
               >
-                {producto.categoria_nombre || producto.categoria}
+                {producto.categoria}
               </Link>
             </>
           )}
           <span>/</span>
-          <span className="text-espresso dark:text-linen font-semibold truncate max-w-[200px]">
+          <span className="text-espresso dark:text-linen font-semibold truncate max-w-[220px]">
             {producto.nombre}
           </span>
         </nav>
@@ -137,47 +142,46 @@ export default async function DetalleProductoPage({ params }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-14 items-start">
           {/* Imagen */}
           <div className="space-y-4">
-            <div className="relative aspect-4/3 sm:aspect-square rounded-3xl overflow-hidden bg-linen dark:bg-espresso/20 border border-border shadow-md">
-              {producto.imagen ? (
-                <Image
-                  src={producto.imagen}
-                  alt={producto.nombre}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-7xl">
-                  🪑
-                </div>
-              )}
+            <div className="relative aspect-4/3 sm:aspect-square rounded-3xl overflow-hidden bg-linen dark:bg-card border border-border shadow-md">
+              <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
+                <Badge stock={producto.stock} />
+                {producto.material && <Badge madera={producto.material} />}
+              </div>
+
+              <Image
+                src={producto.imagen}
+                alt={producto.nombre}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
             </div>
 
-            {/* Badges */}
+            {/* Beneficios */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="p-3 rounded-2xl bg-card border border-border text-center space-y-1">
+              <div className="p-3 rounded-2xl bg-card border border-border text-center space-y-1 shadow-2xs">
                 <Truck className="w-5 h-5 mx-auto text-camel" />
                 <span className="text-[11px] font-bold block text-espresso dark:text-linen">
                   Envío a Todo el País
                 </span>
                 <span className="text-[10px] text-muted-foreground block">
-                  Logística especializada
+                  Logística propia
                 </span>
               </div>
-              <div className="p-3 rounded-2xl bg-card border border-border text-center space-y-1">
+              <div className="p-3 rounded-2xl bg-card border border-border text-center space-y-1 shadow-2xs">
                 <CreditCard className="w-5 h-5 mx-auto text-camel" />
                 <span className="text-[11px] font-bold block text-espresso dark:text-linen">
                   6 Cuotas Sin Interés
                 </span>
                 <span className="text-[10px] text-muted-foreground block">
-                  Con tarjetas bancarias
+                  Todas las tarjetas
                 </span>
               </div>
-              <div className="p-3 rounded-2xl bg-card border border-border text-center space-y-1">
+              <div className="p-3 rounded-2xl bg-card border border-border text-center space-y-1 shadow-2xs">
                 <ShieldCheck className="w-5 h-5 mx-auto text-camel" />
                 <span className="text-[11px] font-bold block text-espresso dark:text-linen">
-                  Garantía de Fábrica
+                  Garantía 5 Años
                 </span>
                 <span className="text-[10px] text-muted-foreground block">
                   Maderas seleccionadas
@@ -189,9 +193,9 @@ export default async function DetalleProductoPage({ params }) {
           {/* Detalles */}
           <div className="space-y-6">
             <div className="space-y-2">
-              {(producto.categoria_nombre || producto.categoria) && (
+              {producto.categoria && (
                 <span className="text-xs uppercase tracking-widest text-camel font-bold block">
-                  {producto.categoria_nombre || producto.categoria}
+                  {producto.categoria}
                 </span>
               )}
               <h1 className="text-3xl sm:text-4xl font-extrabold text-espresso dark:text-linen tracking-tight">
@@ -199,27 +203,25 @@ export default async function DetalleProductoPage({ params }) {
               </h1>
             </div>
 
-            {/* Precio */}
+            {/* Tarjeta de Precio */}
             <div className="p-5 rounded-2xl bg-card border border-border space-y-2 shadow-2xs">
               <span className="text-xs text-muted-foreground uppercase font-mono tracking-wider">
-                Precio de contado / transferencia
+                Precio contado / transferencia
               </span>
               <div className="text-3xl sm:text-4xl font-extrabold text-espresso dark:text-linen tracking-tight">
-                ${Number(producto.precio || 0).toLocaleString("es-AR")}
+                {precioFormateado}
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold text-camel">
                 <Sparkles className="w-4 h-4" />
-                <span>
-                  {producto.cuotas || "Hasta 6 cuotas fijas sin interés"}
-                </span>
+                <span>6 cuotas sin interés de {valorCuota}</span>
               </div>
             </div>
 
             {/* Descripción */}
             {producto.descripcion && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-espresso dark:text-linen">
-                  Descripción & Características
+                  Descripción
                 </h3>
                 <p className="text-sm text-cocoa/90 dark:text-khaki leading-relaxed">
                   {producto.descripcion}
@@ -230,7 +232,7 @@ export default async function DetalleProductoPage({ params }) {
             {/* Ficha Técnica */}
             <div className="space-y-3 border-t border-border pt-4">
               <h3 className="text-sm font-bold uppercase tracking-wider text-espresso dark:text-linen">
-                Especificaciones
+                Ficha Técnica
               </h3>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {producto.dimensiones && (
@@ -243,26 +245,28 @@ export default async function DetalleProductoPage({ params }) {
                 )}
                 {producto.material && (
                   <div className="p-3 rounded-xl bg-linen/50 dark:bg-muted/40 border border-border">
-                    <dt className="text-muted-foreground font-medium">Materiales</dt>
+                    <dt className="text-muted-foreground font-medium">Material</dt>
                     <dd className="font-semibold text-espresso dark:text-linen mt-0.5">
                       {producto.material}
                     </dd>
                   </div>
                 )}
-                {producto.garantia && (
+                {producto.color && (
                   <div className="p-3 rounded-xl bg-linen/50 dark:bg-muted/40 border border-border">
-                    <dt className="text-muted-foreground font-medium">Garantía</dt>
+                    <dt className="text-muted-foreground font-medium">Tono / Acabado</dt>
                     <dd className="font-semibold text-espresso dark:text-linen mt-0.5">
-                      {producto.garantia}
+                      {producto.color}
                     </dd>
                   </div>
                 )}
                 <div className="p-3 rounded-xl bg-linen/50 dark:bg-muted/40 border border-border">
-                  <dt className="text-muted-foreground font-medium">Disponibilidad</dt>
+                  <dt className="text-muted-foreground font-medium">Stock en Depósito</dt>
                   <dd className="font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
                     <Check className="w-3.5 h-3.5" />
                     <span>
-                      {producto.stock ? `${producto.stock} unidades en stock` : "Entrega a coordinar"}
+                      {producto.stock > 0
+                        ? `${producto.stock} unidades listas para entrega`
+                        : "Agotado temporalmente"}
                     </span>
                   </dd>
                 </div>
@@ -284,7 +288,6 @@ export default async function DetalleProductoPage({ params }) {
               </a>
 
               <div className="flex gap-3">
-                {/* Botón Agregar al Carrito */}
                 <button
                   type="button"
                   className="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-linen dark:bg-muted border border-border hover:bg-espresso hover:text-linen dark:hover:bg-camel dark:hover:text-espresso text-xs font-bold text-foreground uppercase tracking-wider transition-colors min-h-[44px] cursor-pointer"

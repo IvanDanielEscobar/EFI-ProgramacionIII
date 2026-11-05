@@ -27,13 +27,13 @@ const formatearFecha = (iso) =>
 function normalizarPedido(data) {
   return {
     id: data.id,
-    numero: data.numero_pedido,
+    numero: data.numero_pedido || data.id,
     fecha: data.fecha_creacion,
-    estado: data.estado_display,
-    sucursal: data.sucursal_nombre ?? "—",
+    estado: data.estado_display || data.estado,
+    sucursal: data.sucursal?.nombre ?? data.sucursal_nombre ?? "Casa Central",
     items: (data.detalles ?? []).map((d) => ({
       id: d.id,
-      nombre: d.mueble_nombre ?? "Artículo",
+      nombre: d.mueble?.nombre ?? d.mueble_nombre ?? "Mueble",
       cantidad: d.cantidad,
       precioUnitario: d.precio_unitario,
       subtotal: d.subtotal,
@@ -108,7 +108,7 @@ export default function PedidoDetallePage({ params }) {
     return () => controller.abort();
   }, [id, token, authLoading]);
 
-  // Reutiliza el not-found.jsx global del equipo
+  // not-found.jsx
   if (noEncontrado) notFound();
 
   if (authLoading || (token && cargando)) {

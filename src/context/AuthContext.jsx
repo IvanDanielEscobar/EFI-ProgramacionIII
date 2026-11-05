@@ -35,49 +35,43 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [refreshToken, setRefreshToken] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Inicializar estado desde localStorage
-  useEffect(() => {
+  const [token, setToken] = useState(() => {
+    if (typeof window === "undefined") return null;
     try {
       const storedAccess = localStorage.getItem("home-deco-access-token");
-      const storedRefresh = localStorage.getItem("home-deco-refresh-token");
-      const storedUser = localStorage.getItem("home-deco-user");
-
-      if (storedAccess) {
-        const decoded = decodeJwt(storedAccess);
-        // Verificar si el token no expiro
-        const isExpired = decoded?.exp && decoded.exp * 1000 < Date.now();
-
-        if (!isExpired) {
-          setToken(storedAccess);
-          setRefreshToken(storedRefresh);
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          } else {
-            setUser({
-              id: decoded?.user_id,
-              username: decoded?.username || "Usuario",
-            });
-          }
-        } else {
-          // Token expirado, limpiar
-          localStorage.removeItem("home-deco-access-token");
-          localStorage.removeItem("home-deco-refresh-token");
-          localStorage.removeItem("home-deco-user");
-          document.cookie = "auth_token=; path=/; max-age=0;";
-        }
+      if (!storedAccess) return null;
+      const decoded = decodeJwt(storedAccess);
+      if (decoded?.exp && decoded.exp * 1000 < Date.now()) {
+        localStorage.removeItem("home-deco-access-token");
+        return null;
       }
+      return storedAccess;
     } catch {
-      // Ignoraa errores de acceso
-    } finally {
-      setIsLoading(false);
+      return null;
     }
-  }, []);
+  });
+
+  const [refreshToken, setRefreshToken] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem("home-deco-refresh-token");
+    } catch {
+      return null;
+    }
+  });
+
+  const [user, setUser] = useState(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const storedUser = localStorage.getItem("home-deco-user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const login = async (username, password) => {
     setIsLoading(true);
@@ -125,6 +119,7 @@ export function AuthProvider({ children }) {
       }
       localStorage.setItem("home-deco-user", JSON.stringify(userData));
       document.cookie = `auth_token=${data.access}; path=/; max-age=86400; SameSite=Lax;`;
+      document.cookie = `user_role=${userData.rol}; path=/; max-age=86400; SameSite=Lax;`;
 
       setIsLoading(false);
       return { success: true, user: userData };
@@ -147,6 +142,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("home-deco-refresh-token");
       localStorage.removeItem("home-deco-user");
       document.cookie = "auth_token=; path=/; max-age=0;";
+      document.cookie = "user_role=; path=/; max-age=0;";
     } catch {
       // no-op
     }

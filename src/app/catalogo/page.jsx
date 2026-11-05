@@ -1,72 +1,69 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Search, ArrowRight, Sparkles, Armchair, AlertTriangle } from "lucide-react";
+import { Search, ArrowUpDown } from "lucide-react";
+import { mueblesService, categoriasService } from "@/services/api";
+import { ProductCard } from "@/components/ProductCard";
+import { Alert } from "@/components/Alert";
+import { EmptyState } from "@/components/EmptyState";
 
 export const metadata = {
   title: "Catálogo de Muebles & Diseño | Home & Deco",
   description:
-    "Explorá nuestra colección completa de muebles en maderas nobles: sillones, comedores, mesas, sillas y escritorios.",
+    "Colección exclusiva de muebles en maderas nobles: sillones, comedores, mesas, sillas y escritorios.",
 };
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
-
-const CATEGORIAS_FILTRO = [
-  { id: "todas", label: "Todos", query: "" },
-  { id: "Living", label: "Living & Sofás", query: "Living" },
-  { id: "Comedor", label: "Comedor", query: "Comedor" },
-  { id: "Dormitorio", label: "Dormitorio", query: "Dormitorio" },
-  { id: "Oficina", label: "Home Office", query: "Oficina" },
-];
-
-async function obtenerProductos(categoriaFiltro, busqueda) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/productos/`, {
-      cache: "no-store",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!res.ok) {
-      return {
-        productos: [],
-        error: `El servidor respondió con código ${res.status}. No fue posible recuperar los productos.`,
-      };
-    }
-
-    const data = await res.json();
-    const listaApi = Array.isArray(data) ? data : data.results || [];
-
-    const filtrados = listaApi.filter((item) => {
-      const matchCat = categoriaFiltro
-        ? (item.categoria_nombre || item.categoria || "")
-            .toLowerCase()
-            .includes(categoriaFiltro.toLowerCase())
-        : true;
-      const matchSearch = busqueda
-        ? (item.nombre || "").toLowerCase().includes(busqueda.toLowerCase()) ||
-          (item.descripcion || "").toLowerCase().includes(busqueda.toLowerCase())
-        : true;
-      return matchCat && matchSearch;
-    });
-
-    return { productos: filtrados, error: null };
-  } catch {
-    return {
-      productos: [],
-      error: "La API no responde en este momento. Por favor intentá nuevamente más tarde.",
-    };
-  }
-}
 
 export default async function CatalogoPage({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const categoriaSeleccionada = resolvedSearchParams?.categoria || "";
   const queryBusqueda = resolvedSearchParams?.search || "";
+  const orderingSeleccionado = resolvedSearchParams?.ordering || "-fecha_creacion";
+  const paginaActual = Number(resolvedSearchParams?.page) || 1;
 
-  const { productos, error } = await obtenerProductos(
-    categoriaSeleccionada,
-    queryBusqueda
-  );
+  let productos = [];
+  let totalCount = 0;
+  let hasNext = false;
+  let hasPrevious = false;
+  let error = null;
+  let categoriasLista = [];
+
+  // Petición a la API de DRF
+  try {
+    const [mueblesData, categoriasData] = await Promise.all([
+      mueblesService.getAll({
+        page: paginaActual,
+        search: queryBusqueda,
+        categoria: categoriaSeleccionada,
+        ordering: orderingSeleccionado,
+        limit: 12,
+      }),
+      categoriasService.getAll().catch(() => []),
+    ]);
+
+    productos = mueblesData.results || [];
+    totalCount = mueblesData.count || productos.length;
+    hasNext = Boolean(mueblesData.next);
+    hasPrevious = Boolean(mueblesData.previous);
+    categoriasLista = categoriasData;
+  } catch (err) {
+    error = err.message || "No se pudo conectar con el servidor de Home & Deco.";
+  }
+
+  // Si la API de categorías no devolvió resultados o está offline, usamos la lista base
+  const categoriasFiltro = [
+    { id: "todas", label: "Todos", query: "" },
+    ...(categoriasLista.length > 0
+      ? categoriasLista.map((cat) => ({
+          id: String(cat.id),
+          label: cat.nombre,
+          query: cat.nombre,
+        }))
+      : [
+          { id: "Living", label: "Living & Sala", query: "Living" },
+          { id: "Comedor", label: "Comedor", query: "Comedor" },
+          { id: "Dormitorio", label: "Dormitorio", query: "Dormitorio" },
+          { id: "Oficina", label: "Home Office", query: "Oficina" },
+          { id: "Exterior", label: "Exterior", query: "Exterior" },
+        ]),
+  ];
 
   return (
     <div className="w-full bg-background min-h-screen py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
@@ -75,78 +72,59 @@ export default async function CatalogoPage({ searchParams }) {
         <header className="space-y-3">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-camel mb-1">
+                Colección 2026
+              </p>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-espresso dark:text-linen tracking-tight">
-                Catálogo
+                Catálogo de Piezas
               </h1>
             </div>
             {!error && (
-              <span className="text-xs font-medium text-muted-foreground bg-card border border-border px-3 py-1.5 rounded-full w-fit">
-                {productos.length} {productos.length === 1 ? "pieza encontrada" : "piezas encontradas"}
+              <span className="text-xs font-medium text-muted-foreground bg-card border border-border px-3.5 py-1.5 rounded-full w-fit shadow-2xs">
+                {totalCount} {totalCount === 1 ? "mueble disponible" : "muebles disponibles"}
               </span>
             )}
           </div>
         </header>
 
-        {/* Alerta simple si la API no responde */}
+        {/* Alerta de error si el backend falla */}
         {error && (
-          <div
-            role="alert"
-            className="p-4 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+          <Alert
+            variant="warning"
+            title="Aviso del Servidor"
+            action={
+              <Link
+                href="/catalogo"
+                className="text-xs font-bold underline hover:opacity-80"
+              >
+                Reintentar
+              </Link>
+            }
           >
-            <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>
-                <strong>Aviso de conexión:</strong> {error}
-              </span>
-            </div>
-            <Link
-              href="/catalogo"
-              className="text-xs font-bold underline hover:opacity-80 shrink-0"
-            >
-              Reintentar
-            </Link>
-          </div>
+            {error} (Compruebe que el servicio de backend en Render esté activo).
+          </Alert>
         )}
 
-        {/* Aviso visible de búsqueda */}
-        {queryBusqueda && (
-          <div className="p-4 rounded-2xl bg-card border border-border flex items-center justify-between text-xs sm:text-sm text-foreground shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <Search className="w-4 h-4 text-camel shrink-0" />
-              <span>
-                Buscando: <strong className="text-espresso dark:text-linen font-bold">&quot;{queryBusqueda}&quot;</strong>
-              </span>
-            </div>
-            <Link
-              href={
-                categoriaSeleccionada
-                  ? `/catalogo?categoria=${encodeURIComponent(categoriaSeleccionada)}`
-                  : "/catalogo"
-              }
-              className="px-3 py-1 rounded-lg bg-linen dark:bg-muted text-xs font-semibold text-cocoa dark:text-khaki hover:text-espresso dark:hover:text-linen transition-colors"
-            >
-              Quitar filtro de búsqueda ✕
-            </Link>
-          </div>
-        )}
-
-        {/* Barra de Filtros y Categorías */}
+        {/* Barra de Filtros y Ordenamiento */}
         <div className="bg-card border border-border rounded-2xl p-4 shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            {/* Filtros por Categoría */}
             <nav
               aria-label="Filtro por ambiente"
-              className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none"
+              className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none"
             >
-              {CATEGORIAS_FILTRO.map((cat) => {
+              {categoriasFiltro.map((cat) => {
                 const isActive =
                   (!categoriaSeleccionada && cat.query === "") ||
                   (categoriaSeleccionada &&
-                    cat.query.toLowerCase() ===
-                      categoriaSeleccionada.toLowerCase());
+                    cat.query.toLowerCase() === categoriaSeleccionada.toLowerCase());
 
                 const params = new URLSearchParams();
                 if (cat.query) params.set("categoria", cat.query);
                 if (queryBusqueda) params.set("search", queryBusqueda);
+                if (orderingSeleccionado && orderingSeleccionado !== "-fecha_creacion") {
+                  params.set("ordering", orderingSeleccionado);
+                }
 
                 const queryString = params.toString();
                 const href = queryString ? `/catalogo?${queryString}` : "/catalogo";
@@ -155,7 +133,7 @@ export default async function CatalogoPage({ searchParams }) {
                   <Link
                     key={cat.id}
                     href={href}
-                    className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold tracking-wide whitespace-nowrap transition-all min-h-[40px] flex items-center justify-center ${
+                    className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold tracking-wide whitespace-nowrap transition-all min-h-[40px] flex items-center justify-center ${
                       isActive
                         ? "bg-espresso text-linen dark:bg-camel dark:text-espresso shadow-xs"
                         : "text-cocoa/90 dark:text-khaki hover:text-espresso dark:hover:text-linen hover:bg-muted"
@@ -166,116 +144,150 @@ export default async function CatalogoPage({ searchParams }) {
                 );
               })}
             </nav>
+
+            {/* Ordenamiento por Precio */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                Ordenar:
+              </span>
+              <div className="flex items-center gap-1 bg-muted/60 dark:bg-muted/30 p-1 rounded-xl border border-border">
+                <Link
+                  href={`/catalogo?${new URLSearchParams({
+                    ...(categoriaSeleccionada ? { categoria: categoriaSeleccionada } : {}),
+                    ...(queryBusqueda ? { search: queryBusqueda } : {}),
+                    ordering: "-fecha_creacion",
+                  }).toString()}`}
+                  className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
+                    orderingSeleccionado === "-fecha_creacion"
+                      ? "bg-card text-foreground shadow-2xs font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Recientes
+                </Link>
+                <Link
+                  href={`/catalogo?${new URLSearchParams({
+                    ...(categoriaSeleccionada ? { categoria: categoriaSeleccionada } : {}),
+                    ...(queryBusqueda ? { search: queryBusqueda } : {}),
+                    ordering: "caracteristicas__precio",
+                  }).toString()}`}
+                  className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
+                    orderingSeleccionado === "caracteristicas__precio"
+                      ? "bg-card text-foreground shadow-2xs font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Menor precio
+                </Link>
+                <Link
+                  href={`/catalogo?${new URLSearchParams({
+                    ...(categoriaSeleccionada ? { categoria: categoriaSeleccionada } : {}),
+                    ...(queryBusqueda ? { search: queryBusqueda } : {}),
+                    ordering: "-caracteristicas__precio",
+                  }).toString()}`}
+                  className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
+                    orderingSeleccionado === "-caracteristicas__precio"
+                      ? "bg-card text-foreground shadow-2xs font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Mayor precio
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Grilla de Productos o Estado Vacío */}
-        {!error && productos.length === 0 ? (
-          <div className="text-center py-20 px-4 rounded-3xl bg-card border border-border space-y-4">
-            <div className="w-16 h-16 rounded-full bg-camel/15 mx-auto flex items-center justify-center text-camel">
-              <Search className="w-8 h-8" />
+        {/* Indicador de filtro de búsqueda activo */}
+        {queryBusqueda && (
+          <div className="p-4 rounded-2xl bg-card border border-border flex items-center justify-between text-xs sm:text-sm text-foreground shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <Search className="w-4 h-4 text-camel shrink-0" />
+              <span>
+                Resultados para:{" "}
+                <strong className="text-espresso dark:text-linen font-bold">
+                  &quot;{queryBusqueda}&quot;
+                </strong>
+              </span>
             </div>
-            <h2 className="text-xl font-bold text-espresso dark:text-linen">
-              No encontramos muebles disponibles con este criterio
-            </h2>
-            <p className="text-sm text-cocoa/80 dark:text-khaki max-w-md mx-auto">
-              Probá seleccionando otra categoría o navegá la colección completa
-              para encontrar lo que buscás.
-            </p>
-            <div className="pt-2">
+            <Link
+              href={
+                categoriaSeleccionada
+                  ? `/catalogo?categoria=${encodeURIComponent(categoriaSeleccionada)}`
+                  : "/catalogo"
+              }
+              className="px-3 py-1 rounded-lg bg-linen dark:bg-muted text-xs font-semibold text-cocoa dark:text-khaki hover:text-espresso dark:hover:text-linen transition-colors"
+            >
+              Limpiar búsqueda ✕
+            </Link>
+          </div>
+        )}
+
+        {/* Grilla de Muebles o Estado Vacío */}
+        {!error && productos.length === 0 ? (
+          <EmptyState
+            title="No encontramos muebles disponibles con este criterio"
+            description="Probá seleccionando otra categoría o limpiando la barra de búsqueda para ver más piezas."
+            action={
               <Link
                 href="/catalogo"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-espresso text-linen dark:bg-camel dark:text-espresso text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-cocoa"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-espresso text-linen dark:bg-camel dark:text-espresso text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-cocoa shadow-2xs"
               >
                 Ver todos los productos
               </Link>
-            </div>
-          </div>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {productos.map((prod) => (
-              <article
-                key={prod.id}
-                className="group rounded-2xl bg-card border border-border overflow-hidden flex flex-col shadow-2xs hover:shadow-md transition-all duration-300 hover:border-camel/60"
-              >
-                {/* Imagen */}
-                <Link
-                  href={`/catalogo/${prod.id}`}
-                  className="relative aspect-4/3 overflow-hidden bg-linen dark:bg-espresso/20 block"
-                >
-                  {prod.imagen ? (
-                    <Image
-                      src={prod.imagen}
-                      alt={prod.nombre}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-5xl">
-                      🪑
-                    </div>
-                  )}
-
-                  {prod.destacado && (
-                    <span className="absolute top-3 right-3 bg-camel text-espresso text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
-                      <Sparkles className="w-3 h-3" />
-                      <span>Destacado</span>
-                    </span>
-                  )}
-                </Link>
-
-                {/* Info del Producto */}
-                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    {/* Categoria */}
-                    {(prod.categoria_nombre || prod.categoria) && (
-                      <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold block">
-                        {prod.categoria_nombre || prod.categoria}
-                      </span>
-                    )}
-
-                    <Link
-                      href={`/catalogo/${prod.id}`}
-                      className="block group-hover:text-cocoa dark:group-hover:text-camel transition-colors"
-                    >
-                      <h3 className="font-bold text-base text-espresso dark:text-linen tracking-tight line-clamp-1">
-                        {prod.nombre}
-                      </h3>
-                    </Link>
-                    {prod.descripcion && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                        {prod.descripcion}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="pt-2 border-t border-border/60 space-y-3">
-                    <div>
-                      <span className="text-xs text-muted-foreground block font-mono">
-                        Precio de contado
-                      </span>
-                      <span className="text-xl font-extrabold text-espresso dark:text-linen tracking-tight block">
-                        ${Number(prod.precio || 0).toLocaleString("es-AR")}
-                      </span>
-                      {prod.cuotas && (
-                        <span className="text-[11px] font-semibold text-camel block mt-0.5">
-                          {prod.cuotas}
-                        </span>
-                      )}
-                    </div>
-
-                    <Link
-                      href={`/catalogo/${prod.id}`}
-                      className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-linen dark:bg-muted text-espresso dark:text-linen hover:bg-espresso hover:text-linen dark:hover:bg-camel dark:hover:text-espresso font-semibold text-xs tracking-wider uppercase transition-all min-h-[40px]"
-                    >
-                      <span>Ver Detalles</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </article>
+              <ProductCard key={prod.id} mueble={prod} />
             ))}
+          </div>
+        )}
+
+        {/* Paginación */}
+        {(hasNext || hasPrevious) && (
+          <div className="pt-8 flex items-center justify-center gap-4">
+            {hasPrevious ? (
+              <Link
+                href={`/catalogo?${new URLSearchParams({
+                  ...(categoriaSeleccionada ? { categoria: categoriaSeleccionada } : {}),
+                  ...(queryBusqueda ? { search: queryBusqueda } : {}),
+                  ...(orderingSeleccionado ? { ordering: orderingSeleccionado } : {}),
+                  page: String(paginaActual - 1),
+                }).toString()}`}
+                className="px-4 py-2 rounded-xl bg-card border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors min-h-[40px] flex items-center"
+              >
+                ← Anterior
+              </Link>
+            ) : (
+              <span className="px-4 py-2 rounded-xl bg-muted/40 text-xs text-muted-foreground border border-transparent cursor-not-allowed">
+                ← Anterior
+              </span>
+            )}
+
+            <span className="text-xs font-medium text-muted-foreground">
+              Página {paginaActual}
+            </span>
+
+            {hasNext ? (
+              <Link
+                href={`/catalogo?${new URLSearchParams({
+                  ...(categoriaSeleccionada ? { categoria: categoriaSeleccionada } : {}),
+                  ...(queryBusqueda ? { search: queryBusqueda } : {}),
+                  ...(orderingSeleccionado ? { ordering: orderingSeleccionado } : {}),
+                  page: String(paginaActual + 1),
+                }).toString()}`}
+                className="px-4 py-2 rounded-xl bg-card border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors min-h-[40px] flex items-center"
+              >
+                Siguiente →
+              </Link>
+            ) : (
+              <span className="px-4 py-2 rounded-xl bg-muted/40 text-xs text-muted-foreground border border-transparent cursor-not-allowed">
+                Siguiente →
+              </span>
+            )}
           </div>
         )}
       </div>

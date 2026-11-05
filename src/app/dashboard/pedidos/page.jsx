@@ -1,13 +1,12 @@
 import Link from "next/link";
 import {
   ShoppingBag,
-  Clock,
-  CheckCircle2,
   Truck,
+  CheckCircle2,
   AlertCircle,
+  User,
+  Clock,
   Eye,
-  Filter,
-  ArrowUpRight,
 } from "lucide-react";
 
 export const metadata = {
@@ -15,63 +14,34 @@ export const metadata = {
   description: "Control de órdenes de compra, pagos y estado logístico de envíos.",
 };
 
-const PEDIDOS_MOCK = [
-  {
-    id: "PED-1042",
-    cliente: "Martina Rossi",
-    email: "martina.rossi@gmail.com",
-    fecha: "04 Nov 2026, 18:30",
-    items: "Sofá Extensible 3c Beyond (x1)",
-    total: 385000,
-    metodo: "Transferencia Bancaria",
-    estado: "PAGADO",
-    entrega: "Retiro en Showroom Río Cuarto",
-  },
-  {
-    id: "PED-1041",
-    cliente: "Lucas Benítez",
-    email: "lbenitez@outlook.com",
-    fecha: "04 Nov 2026, 14:15",
-    items: "Silla Vivire S01 Paraíso (x4)",
-    total: 312000,
-    metodo: "6 Cuotas Sin Interés",
-    estado: "EN_PREPARACION",
-    entrega: "Flete a Córdoba Capital",
-  },
-  {
-    id: "PED-1040",
-    cliente: "Sofía Gómez",
-    email: "sofi.gomez@yahoo.com.ar",
-    fecha: "03 Nov 2026, 21:05",
-    items: "Mesa Comedor Extensible C01 (x1)",
-    total: 460000,
-    metodo: "6 Cuotas Sin Interés",
-    estado: "ENVIADO",
-    entrega: "Envío Nacional a Rosario",
-  },
-  {
-    id: "PED-1039",
-    cliente: "Esteban Morales",
-    email: "esteban.m@empresa.com",
-    fecha: "03 Nov 2026, 11:40",
-    items: "Escritorio Elevable Altura Pro (x2)",
-    total: 590000,
-    metodo: "Transferencia Factura A",
-    estado: "ENTREGADO",
-    entrega: "Retiro en Showroom Río Cuarto",
-  },
-  {
-    id: "PED-1038",
-    cliente: "Camila Fernández",
-    email: "camila.f@gmail.com",
-    fecha: "02 Nov 2026, 16:50",
-    items: "Respaldo Cama Nube Entelado (x1)",
-    total: 165000,
-    metodo: "Tarjeta de Débito",
-    estado: "ENTREGADO",
-    entrega: "Flete Local Río Cuarto",
-  },
-];
+export const dynamic = "force-dynamic";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
+
+async function obtenerPedidos() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/pedidos/`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      return {
+        pedidos: [],
+        error: `El servidor devolvió un error (${res.status}) al consultar pedidos.`,
+      };
+    }
+
+    const data = await res.json();
+    const lista = Array.isArray(data) ? data : data.results || [];
+    return { pedidos: lista, error: null };
+  } catch {
+    return {
+      pedidos: [],
+      error: "No fue posible conectar con el servicio remoto de órdenes de compra.",
+    };
+  }
+}
 
 function BadgeEstado({ estado }) {
   switch (estado) {
@@ -106,97 +76,152 @@ function BadgeEstado({ estado }) {
     default:
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
-          <span>{estado}</span>
+          <span>{estado || "Pendiente"}</span>
         </span>
       );
   }
 }
 
-export default function DashboardPedidosPage() {
+export default async function DashboardPedidosPage() {
+  const { pedidos, error } = await obtenerPedidos();
+
   return (
     <div className="space-y-6">
       {/* Cabecera */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-camel uppercase tracking-wider">
-            <ShoppingBag className="w-4 h-4" />
-            <span>Ventas & Despachos</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-espresso dark:text-linen tracking-tight">
             Gestión de Pedidos
           </h1>
-          <p className="text-xs sm:text-sm text-cocoa/80 dark:text-khaki mt-1">
-            Seguimiento de órdenes de compra, cobranzas y coordinación logística.
+        </div>
+
+        {!error && pedidos.length > 0 && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-card border border-border text-foreground">
+              Total activos: {pedidos.length} órdenes
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Manejo de Error o Datos No Disponibles */}
+      {error ? (
+        <div className="p-8 rounded-3xl bg-card border border-border text-center space-y-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 mx-auto flex items-center justify-center">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="font-bold text-base text-espresso dark:text-linen">
+            Información de pedidos no disponible
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
+            {error}
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/dashboard/pedidos"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-linen dark:bg-muted border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+            >
+              Reintentar
+            </Link>
+          </div>
+        </div>
+      ) : pedidos.length === 0 ? (
+        <div className="p-8 rounded-3xl bg-card border border-border text-center space-y-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-muted mx-auto flex items-center justify-center text-muted-foreground">
+            <ShoppingBag className="w-6 h-6" />
+          </div>
+          <h2 className="font-bold text-base text-espresso dark:text-linen">
+            No hay pedidos registrados
+          </h2>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Actualmente no hay órdenes de compra registradas en el sistema.
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-card border border-border text-foreground">
-            Total activos: {PEDIDOS_MOCK.length} órdenes
-          </span>
-        </div>
-      </div>
-
-      {/* Tabla de Pedidos */}
-      <div className="rounded-2xl bg-card border border-border shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-linen/60 dark:bg-muted/40 border-b border-border text-espresso dark:text-linen font-bold uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="py-3.5 px-4">Orden #</th>
-                <th className="py-3.5 px-4">Cliente</th>
-                <th className="py-3.5 px-4">Piezas Compradas</th>
-                <th className="py-3.5 px-4 text-right">Monto Total</th>
-                <th className="py-3.5 px-4 text-center">Estado</th>
-                <th className="py-3.5 px-4">Modalidad de Entrega</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {PEDIDOS_MOCK.map((ped) => (
-                <tr
-                  key={ped.id}
-                  className="hover:bg-muted/30 transition-colors"
-                >
-                  <td className="py-3 px-4 font-mono font-bold text-espresso dark:text-linen">
-                    {ped.id}
-                    <span className="block text-[10px] text-muted-foreground font-sans">
-                      {ped.fecha}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-4">
-                    <span className="font-semibold text-espresso dark:text-linen block">
-                      {ped.cliente}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {ped.email}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-4 text-cocoa/90 dark:text-khaki">
-                    <span className="font-medium">{ped.items}</span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {ped.metodo}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-4 text-right font-extrabold text-espresso dark:text-linen font-mono">
-                    ${Number(ped.total).toLocaleString("es-AR")}
-                  </td>
-
-                  <td className="py-3 px-4 text-center">
-                    <BadgeEstado estado={ped.estado} />
-                  </td>
-
-                  <td className="py-3 px-4 text-xs text-muted-foreground">
-                    {ped.entrega}
-                  </td>
+      ) : (
+        /* Tabla con Columna Extra: Datos del Cliente */
+        <div className="rounded-2xl bg-card border border-border shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="bg-linen/60 dark:bg-muted/40 border-b border-border text-espresso dark:text-linen font-bold uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th className="py-3.5 px-4">Orden #</th>
+                  <th className="py-3.5 px-4">Cliente</th>
+                  <th className="py-3.5 px-4">Piezas Compradas</th>
+                  <th className="py-3.5 px-4 text-right">Monto Total</th>
+                  <th className="py-3.5 px-4 text-center">Estado</th>
+                  <th className="py-3.5 px-4">Entrega</th>
+                  <th className="py-3.5 px-4 text-center">Datos del Cliente</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {pedidos.map((ped) => (
+                  <tr
+                    key={ped.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
+                    <td className="py-3 px-4 font-mono font-bold text-espresso dark:text-linen">
+                      #{ped.id}
+                      {ped.fecha && (
+                        <span className="block text-[10px] text-muted-foreground font-sans">
+                          {ped.fecha}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4">
+                      <span className="font-semibold text-espresso dark:text-linen block">
+                        {ped.cliente_nombre || ped.cliente || "Cliente"}
+                      </span>
+                      {ped.email && (
+                        <span className="text-[11px] text-muted-foreground">
+                          {ped.email}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 text-cocoa/90 dark:text-khaki">
+                      <span className="font-medium">
+                        {ped.items_resumen || ped.items?.length
+                          ? `${ped.items.length} piezas`
+                          : "Detalle de muebles"}
+                      </span>
+                      {ped.metodo_pago && (
+                        <span className="block text-[11px] text-muted-foreground">
+                          {ped.metodo_pago}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 text-right font-extrabold text-espresso dark:text-linen font-mono">
+                      ${Number(ped.total || 0).toLocaleString("es-AR")}
+                    </td>
+
+                    <td className="py-3 px-4 text-center">
+                      <BadgeEstado estado={ped.estado} />
+                    </td>
+
+                    <td className="py-3 px-4 text-xs text-muted-foreground">
+                      {ped.direccion_envio || ped.entrega || "A coordinar"}
+                    </td>
+
+                    {/* Columna nueva: Botón para ver los datos del cliente */}
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        title={`Ver ficha del cliente ${ped.cliente_nombre || ped.cliente || ""}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-linen/50 dark:bg-muted/50 text-xs font-semibold text-cocoa dark:text-khaki hover:bg-espresso hover:text-linen dark:hover:bg-camel dark:hover:text-espresso transition-colors cursor-pointer"
+                      >
+                        <User className="w-3.5 h-3.5" />
+                        <span>Ver Cliente</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

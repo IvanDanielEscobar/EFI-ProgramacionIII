@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Filter, ArrowRight, Sparkles, Check, Armchair } from "lucide-react";
+import { Search, ArrowRight, Sparkles, Armchair, AlertTriangle } from "lucide-react";
 
 export const metadata = {
   title: "Catálogo de Muebles & Diseño | Home & Deco",
@@ -10,113 +10,6 @@ export const metadata = {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
-
-const PRODUCTOS_DEFAULT = [
-  {
-    id: 1,
-    nombre: "Sofá Extensible 3c Beyond",
-    categoria: "Living",
-    categoria_nombre: "Living & Sala",
-    descripcion:
-      "Tapizado en lino natural antimanchas con estructura maciza de paraíso estacionado.",
-    precio: 385000,
-    cuotas: "6 cuotas fijas de $ 64.166",
-    stock: 8,
-    destacado: true,
-    imagen: "/images/prod-sofa.jpg",
-  },
-  {
-    id: 2,
-    nombre: "Silla Vivire S01 Paraíso",
-    categoria: "Comedor",
-    categoria_nombre: "Comedores",
-    descripcion:
-      "Diseño ergonómico nórdico, respaldo curvo al vapor y asiento tapizado en bouclé.",
-    precio: 78000,
-    cuotas: "6 cuotas fijas de $ 13.000",
-    stock: 24,
-    destacado: true,
-    imagen: "/images/prod-silla.jpg",
-  },
-  {
-    id: 3,
-    nombre: "Mesa Comedor Extensible C01",
-    categoria: "Comedor",
-    categoria_nombre: "Comedores",
-    descripcion:
-      "Mesa extensible de 1.60m a 2.10m en madera maciza de petiribí con hidrolaca poliuretánica mate.",
-    precio: 460000,
-    cuotas: "6 cuotas fijas de $ 76.666",
-    stock: 5,
-    destacado: true,
-    imagen: "/images/prod-mesa.jpg",
-  },
-  {
-    id: 4,
-    nombre: "Escritorio Elevable Altura Pro",
-    categoria: "Oficina",
-    categoria_nombre: "Home Office",
-    descripcion:
-      "Tapa de madera maciza con pasacables integrado y base de acero con terminación epoxi microtexturada.",
-    precio: 295000,
-    cuotas: "6 cuotas fijas de $ 49.166",
-    stock: 11,
-    destacado: true,
-    imagen: "/images/prod-escritorio.jpg",
-  },
-  {
-    id: 5,
-    nombre: "Rinconero Olala XXL",
-    categoria: "Living",
-    categoria_nombre: "Living & Sala",
-    descripcion:
-      "Módulo rinconero reversible con almohadones vellón siliconado soft y vivos reforzados.",
-    precio: 520000,
-    cuotas: "6 cuotas fijas de $ 86.666",
-    stock: 4,
-    destacado: false,
-    imagen: "/images/hero-sofa.jpg",
-  },
-  {
-    id: 6,
-    nombre: "Rinconero Lounge Petiribí",
-    categoria: "Living",
-    categoria_nombre: "Living & Sala",
-    descripcion:
-      "Líneas puras, respaldos envolventes y mesas auxiliares integradas con veta viva expuesta.",
-    precio: 610000,
-    cuotas: "6 cuotas fijas de $ 101.666",
-    stock: 3,
-    destacado: false,
-    imagen: "/images/hero-lounge.jpg",
-  },
-  {
-    id: 7,
-    nombre: "Respaldo Cama Nube Entelado",
-    categoria: "Dormitorio",
-    categoria_nombre: "Dormitorio",
-    descripcion:
-      "Acolchado premium con capitoné sutil en pana antimanchas con tratamiento hidrorepelente.",
-    precio: 165000,
-    cuotas: "6 cuotas fijas de $ 27.500",
-    stock: 14,
-    destacado: false,
-    imagen: "/images/cat-dormitorio.jpg",
-  },
-  {
-    id: 8,
-    nombre: "Biblioteca Modular Nórdica",
-    categoria: "Oficina",
-    categoria_nombre: "Home Office",
-    descripcion:
-      "Estructura abierta de 5 estantes regulables fabricada en paraíso y frentes laqueados blancos.",
-    precio: 240000,
-    cuotas: "6 cuotas fijas de $ 40.000",
-    stock: 6,
-    destacado: false,
-    imagen: "/images/cat-oficina.jpg",
-  },
-];
 
 const CATEGORIAS_FILTRO = [
   { id: "todas", label: "Todos", query: "" },
@@ -132,38 +25,37 @@ async function obtenerProductos(categoriaFiltro, busqueda) {
       cache: "no-store",
       headers: { "Content-Type": "application/json" },
     });
-    if (res.ok) {
-      const data = await res.json();
-      const listaApi = Array.isArray(data) ? data : data.results || [];
-      if (listaApi.length > 0) {
-        return listaApi.filter((item) => {
-          const matchCat = categoriaFiltro
-            ? (item.categoria_nombre || item.categoria || "")
-                .toLowerCase()
-                .includes(categoriaFiltro.toLowerCase())
-            : true;
-          const matchSearch = busqueda
-            ? (item.nombre || "").toLowerCase().includes(busqueda.toLowerCase())
-            : true;
-          return matchCat && matchSearch;
-        });
-      }
-    }
-  } catch {
-    // Si la API remota está hibernando en Render o no responde, usamos datos de catálogo
-  }
 
-  return PRODUCTOS_DEFAULT.filter((item) => {
-    const matchCat = categoriaFiltro
-      ? item.categoria.toLowerCase() === categoriaFiltro.toLowerCase() ||
-        item.categoria_nombre.toLowerCase().includes(categoriaFiltro.toLowerCase())
-      : true;
-    const matchSearch = busqueda
-      ? item.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        item.descripcion.toLowerCase().includes(busqueda.toLowerCase())
-      : true;
-    return matchCat && matchSearch;
-  });
+    if (!res.ok) {
+      return {
+        productos: [],
+        error: `El servidor respondió con código ${res.status}. No fue posible recuperar los productos.`,
+      };
+    }
+
+    const data = await res.json();
+    const listaApi = Array.isArray(data) ? data : data.results || [];
+
+    const filtrados = listaApi.filter((item) => {
+      const matchCat = categoriaFiltro
+        ? (item.categoria_nombre || item.categoria || "")
+            .toLowerCase()
+            .includes(categoriaFiltro.toLowerCase())
+        : true;
+      const matchSearch = busqueda
+        ? (item.nombre || "").toLowerCase().includes(busqueda.toLowerCase()) ||
+          (item.descripcion || "").toLowerCase().includes(busqueda.toLowerCase())
+        : true;
+      return matchCat && matchSearch;
+    });
+
+    return { productos: filtrados, error: null };
+  } catch {
+    return {
+      productos: [],
+      error: "La API no responde en este momento. Por favor intentá nuevamente más tarde.",
+    };
+  }
 }
 
 export default async function CatalogoPage({ searchParams }) {
@@ -171,7 +63,7 @@ export default async function CatalogoPage({ searchParams }) {
   const categoriaSeleccionada = resolvedSearchParams?.categoria || "";
   const queryBusqueda = resolvedSearchParams?.search || "";
 
-  const productos = await obtenerProductos(
+  const { productos, error } = await obtenerProductos(
     categoriaSeleccionada,
     queryBusqueda
   );
@@ -181,32 +73,70 @@ export default async function CatalogoPage({ searchParams }) {
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Encabezado */}
         <header className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-camel">
-            <Armchair className="w-4 h-4" />
-            <span>Mueblería de Autor</span>
-          </div>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-espresso dark:text-linen tracking-tight">
-                Catálogo de Muebles & Decoración
+                Catálogo
               </h1>
-              <p className="mt-2 text-sm text-cocoa/80 dark:text-khaki max-w-2xl">
-                Diseños contemporáneos construidos artesanalmente con maderas
-                nobles argentinas seleccionadas: Paraíso, Petiribí y Pino
-                Macizo.
-              </p>
             </div>
-            <span className="text-xs font-medium text-muted-foreground bg-card border border-border px-3 py-1.5 rounded-full w-fit">
-              {productos.length} {productos.length === 1 ? "pieza disponible" : "piezas disponibles"}
-            </span>
+            {!error && (
+              <span className="text-xs font-medium text-muted-foreground bg-card border border-border px-3 py-1.5 rounded-full w-fit">
+                {productos.length} {productos.length === 1 ? "pieza encontrada" : "piezas encontradas"}
+              </span>
+            )}
           </div>
         </header>
 
-        {/* Barra de Filtros y Categorías con <Link> */}
+        {/* Alerta simple si la API no responde */}
+        {error && (
+          <div
+            role="alert"
+            className="p-4 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+          >
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>
+                <strong>Aviso de conexión:</strong> {error}
+              </span>
+            </div>
+            <Link
+              href="/catalogo"
+              className="text-xs font-bold underline hover:opacity-80 shrink-0"
+            >
+              Reintentar
+            </Link>
+          </div>
+        )}
+
+        {/* Aviso visible de búsqueda */}
+        {queryBusqueda && (
+          <div className="p-4 rounded-2xl bg-card border border-border flex items-center justify-between text-xs sm:text-sm text-foreground shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <Search className="w-4 h-4 text-camel shrink-0" />
+              <span>
+                Buscando: <strong className="text-espresso dark:text-linen font-bold">&quot;{queryBusqueda}&quot;</strong>
+              </span>
+            </div>
+            <Link
+              href={
+                categoriaSeleccionada
+                  ? `/catalogo?categoria=${encodeURIComponent(categoriaSeleccionada)}`
+                  : "/catalogo"
+              }
+              className="px-3 py-1 rounded-lg bg-linen dark:bg-muted text-xs font-semibold text-cocoa dark:text-khaki hover:text-espresso dark:hover:text-linen transition-colors"
+            >
+              Quitar filtro de búsqueda ✕
+            </Link>
+          </div>
+        )}
+
+        {/* Barra de Filtros y Categorías */}
         <div className="bg-card border border-border rounded-2xl p-4 shadow-2xs space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-            {/* Píldoras de Categorías vinculadas con Next.js Link */}
-            <nav aria-label="Filtro por ambiente" className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <nav
+              aria-label="Filtro por ambiente"
+              className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none"
+            >
               {CATEGORIAS_FILTRO.map((cat) => {
                 const isActive =
                   (!categoriaSeleccionada && cat.query === "") ||
@@ -214,9 +144,12 @@ export default async function CatalogoPage({ searchParams }) {
                     cat.query.toLowerCase() ===
                       categoriaSeleccionada.toLowerCase());
 
-                const href = cat.query
-                  ? `/catalogo?categoria=${encodeURIComponent(cat.query)}`
-                  : "/catalogo";
+                const params = new URLSearchParams();
+                if (cat.query) params.set("categoria", cat.query);
+                if (queryBusqueda) params.set("search", queryBusqueda);
+
+                const queryString = params.toString();
+                const href = queryString ? `/catalogo?${queryString}` : "/catalogo";
 
                 return (
                   <Link
@@ -233,30 +166,17 @@ export default async function CatalogoPage({ searchParams }) {
                 );
               })}
             </nav>
-
-            {/* Aviso de búsqueda activa */}
-            {queryBusqueda && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Filtrando por: &quot;{queryBusqueda}&quot;</span>
-                <Link
-                  href={categoriaSeleccionada ? `/catalogo?categoria=${categoriaSeleccionada}` : "/catalogo"}
-                  className="text-camel font-semibold hover:underline"
-                >
-                  Limpiar
-                </Link>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Grilla de Productos */}
-        {productos.length === 0 ? (
+        {/* Grilla de Productos o Estado Vacío */}
+        {!error && productos.length === 0 ? (
           <div className="text-center py-20 px-4 rounded-3xl bg-card border border-border space-y-4">
             <div className="w-16 h-16 rounded-full bg-camel/15 mx-auto flex items-center justify-center text-camel">
               <Search className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold text-espresso dark:text-linen">
-              No encontramos muebles con ese criterio
+              No encontramos muebles disponibles con este criterio
             </h2>
             <p className="text-sm text-cocoa/80 dark:text-khaki max-w-md mx-auto">
               Probá seleccionando otra categoría o navegá la colección completa
@@ -278,7 +198,7 @@ export default async function CatalogoPage({ searchParams }) {
                 key={prod.id}
                 className="group rounded-2xl bg-card border border-border overflow-hidden flex flex-col shadow-2xs hover:shadow-md transition-all duration-300 hover:border-camel/60"
               >
-                {/* Imagen del Mueble */}
+                {/* Imagen */}
                 <Link
                   href={`/catalogo/${prod.id}`}
                   className="relative aspect-4/3 overflow-hidden bg-linen dark:bg-espresso/20 block"
@@ -297,11 +217,6 @@ export default async function CatalogoPage({ searchParams }) {
                     </div>
                   )}
 
-                  {/* Badge de Categoría */}
-                  <span className="absolute top-3 left-3 bg-card/90 backdrop-blur-md border border-border/80 text-[10px] font-bold uppercase tracking-wider text-espresso dark:text-linen px-2.5 py-1 rounded-md">
-                    {prod.categoria_nombre || prod.categoria}
-                  </span>
-
                   {prod.destacado && (
                     <span className="absolute top-3 right-3 bg-camel text-espresso text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
                       <Sparkles className="w-3 h-3" />
@@ -313,6 +228,13 @@ export default async function CatalogoPage({ searchParams }) {
                 {/* Info del Producto */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
+                    {/* Categoria */}
+                    {(prod.categoria_nombre || prod.categoria) && (
+                      <span className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold block">
+                        {prod.categoria_nombre || prod.categoria}
+                      </span>
+                    )}
+
                     <Link
                       href={`/catalogo/${prod.id}`}
                       className="block group-hover:text-cocoa dark:group-hover:text-camel transition-colors"
@@ -321,9 +243,11 @@ export default async function CatalogoPage({ searchParams }) {
                         {prod.nombre}
                       </h3>
                     </Link>
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                      {prod.descripcion}
-                    </p>
+                    {prod.descripcion && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {prod.descripcion}
+                      </p>
+                    )}
                   </div>
 
                   <div className="pt-2 border-t border-border/60 space-y-3">

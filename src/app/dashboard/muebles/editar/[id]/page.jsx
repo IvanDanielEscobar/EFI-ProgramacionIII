@@ -1,13 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowLeft,
   Save,
-  Armchair,
-  Upload,
-  CheckCircle2,
-  Trash2,
-  AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
 
 export const metadata = {
@@ -18,65 +13,21 @@ export const metadata = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
 
-const PRODUCTOS_MOCK = {
-  "1": {
-    nombre: "Sofá Extensible 3c Beyond",
-    categoria: "Living",
-    precio: 385000,
-    stock: 8,
-    descripcion:
-      "Tapizado en lino natural antimanchas con estructura maciza de paraíso estacionado.",
-    material: "Madera maciza de Paraíso y lino natural",
-    dimensiones: "2.20m x 0.95m x 0.85m",
-    imagen: "/images/prod-sofa.jpg",
-  },
-  "2": {
-    nombre: "Silla Vivire S01 Paraíso",
-    categoria: "Comedor",
-    precio: 78000,
-    stock: 24,
-    descripcion:
-      "Diseño ergonómico nórdico, respaldo curvo al vapor y asiento tapizado en bouclé.",
-    material: "Madera maciza de Paraíso",
-    dimensiones: "0.52m x 0.50m x 0.82m",
-    imagen: "/images/prod-silla.jpg",
-  },
-  "3": {
-    nombre: "Mesa Comedor Extensible C01",
-    categoria: "Comedor",
-    precio: 460000,
-    stock: 5,
-    descripcion:
-      "Mesa extensible de 1.60m a 2.10m en madera maciza de petiribí con hidrolaca poliuretánica.",
-    material: "Petiribí macizo",
-    dimensiones: "1.60m - 2.10m x 0.90m x 0.77m",
-    imagen: "/images/prod-mesa.jpg",
-  },
-  "4": {
-    nombre: "Escritorio Elevable Altura Pro",
-    categoria: "Oficina",
-    precio: 295000,
-    stock: 11,
-    descripcion:
-      "Tapa de madera maciza con pasacables integrado y chasis de acero estructural.",
-    material: "Paraíso macizo y acero estructural",
-    dimensiones: "1.40m x 0.70m x 0.75m",
-    imagen: "/images/prod-escritorio.jpg",
-  },
-};
-
 async function obtenerDatosMueble(id) {
   if (id === "nuevo") {
     return {
-      nombre: "",
-      categoria: "Living",
-      precio: "",
-      stock: 0,
-      descripcion: "",
-      material: "",
-      dimensiones: "",
-      imagen: null,
+      mueble: {
+        nombre: "",
+        categoria: "Living",
+        precio: "",
+        stock: 0,
+        descripcion: "",
+        material: "",
+        dimensiones: "",
+        imagen: null,
+      },
       esNuevo: true,
+      error: null,
     };
   }
 
@@ -84,32 +35,57 @@ async function obtenerDatosMueble(id) {
     const res = await fetch(`${API_BASE_URL}/productos/${id}/`, {
       cache: "no-store",
     });
+
     if (res.ok) {
       const data = await res.json();
-      return { ...data, esNuevo: false };
+      return { mueble: data, esNuevo: false, error: null };
     }
+
+    return {
+      mueble: null,
+      esNuevo: false,
+      error: `No fue posible encontrar el mueble (${res.status}).`,
+    };
   } catch {
-    // fallback
+    return {
+      mueble: null,
+      esNuevo: false,
+      error: "No se pudo conectar con el servidor remoto para cargar los datos del mueble.",
+    };
   }
-
-  const mock = PRODUCTOS_MOCK[id] || {
-    nombre: `Mueble #${id}`,
-    categoria: "Living",
-    precio: 200000,
-    stock: 5,
-    descripcion: "Descripción de la pieza.",
-    material: "Paraíso macizo",
-    dimensiones: "Estándar",
-    imagen: "/images/prod-sofa.jpg",
-  };
-
-  return { ...mock, esNuevo: false };
 }
 
 export default async function EditarMueblePage({ params }) {
   const { id } = await params;
-  const mueble = await obtenerDatosMueble(id);
-  const esNuevo = mueble.esNuevo;
+  const { mueble, esNuevo, error } = await obtenerDatosMueble(id);
+
+  if (error || !mueble) {
+    return (
+      <div className="space-y-6 max-w-2xl py-8">
+        <div>
+          <Link
+            href="/dashboard/muebles"
+            className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cocoa dark:text-camel hover:text-espresso dark:hover:text-linen transition-colors min-h-[36px]"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Volver al listado de muebles</span>
+          </Link>
+        </div>
+
+        <div className="p-8 rounded-3xl bg-card border border-border text-center space-y-4 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 mx-auto flex items-center justify-center">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="font-bold text-base text-espresso dark:text-linen">
+            Datos del mueble no disponibles
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {error || "El mueble seleccionado no se encuentra disponible para su edición."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -174,7 +150,7 @@ export default async function EditarMueblePage({ params }) {
               </label>
               <select
                 name="categoria"
-                defaultValue={mueble.categoria}
+                defaultValue={mueble.categoria || "Living"}
                 className="w-full px-3 py-2.5 rounded-xl border border-border bg-linen/40 dark:bg-muted/40 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-camel min-h-[44px]"
               >
                 <option value="Living">Living & Sofás</option>

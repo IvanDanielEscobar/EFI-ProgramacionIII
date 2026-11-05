@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Armchair, Store, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Armchair, Store, AlertTriangle, Ban } from "lucide-react";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
@@ -30,6 +30,7 @@ function normalizarPedido(data) {
     numero: data.numero_pedido,
     fecha: data.fecha_creacion,
     estado: data.estado_display,
+    estadoCodigo: data.estado,
     sucursal: data.sucursal_nombre ?? "—",
     items: (data.detalles ?? []).map((d) => ({
       id: d.id,
@@ -69,6 +70,9 @@ export default function PedidoDetallePage({ params }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [noEncontrado, setNoEncontrado] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [errorCancelar, setErrorCancelar] = useState(null);
 
   useEffect(() => {
     if (authLoading || !token) return;
@@ -108,6 +112,47 @@ export default function PedidoDetallePage({ params }) {
     return () => controller.abort();
   }, [id, token, authLoading]);
 
+    async function cancelarPedido() {
+    setCancelando(true);
+    setErrorCancelar(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/pedidos/${id}/cancelar/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 401) {
+        throw new Error("Tu sesión expiró. Volvé a iniciar sesión.");
+      }
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          data.detail ||
+            data.error ||
+            data.mensaje ||
+            data.non_field_errors?.[0] ||
+            "No se pudo cancelar el pedido."
+        );
+      }
+
+      // Vuelve a pedir la orden para mostrar el estado actualizado
+      const actualizado = await fetch(`${API_BASE_URL}/pedidos/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (actualizado.ok) {
+        setPedido(normalizarPedido(await actualizado.json()));
+      }
+      setConfirmando(false);
+    } catch (err) {
+      setErrorCancelar(err.message || "Error al conectar con el servidor.");
+    } finally {
+      setCancelando(false);
+    }
+  }
+
   // Reutiliza el not-found.jsx global del equipo
   if (noEncontrado) notFound();
 
@@ -136,6 +181,8 @@ export default function PedidoDetallePage({ params }) {
   }
 
   if (!pedido) return null;
+
+  const yaCancelado = /cancel/i.test(`${pedido.estadoCodigo ?? ""} ${pedido.estado ?? ""}`);
 
   return (
     <div className="space-y-8">
@@ -221,6 +268,49 @@ export default function PedidoDetallePage({ params }) {
               {formatearPrecio(pedido.total)}
             </div>
           </section>
+          {!yaCancelado && (
+            <section className="p-6 rounded-2xl bg-card border border-border space-y-3">
+                {!confirmando ? (
+                    <button
+                        type="button"
+                        onClick={() => setConfirmando(true)}
+                        className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 font-semibold text-sm transition-colors min-h-[44px]"
+                    >
+                        <Ban className="w-4 h-4" />
+                        <span>Cancelar pedido</span>
+                    </button>
+                ) : (
+                <div className="space-y-3">
+                    <p className="text-sm font-semibold text-foreground">
+                        ¿Seguro que querés cancelar este pedido?
+                    </p>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={cancelarPedido}
+                            disabled={cancelando}
+                            className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm transition-colors min-h-[44px] disabled:opacity-60"
+                        >
+                            {cancelando ? "Cancelando..." : "Sí, cancelar"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setConfirmando(false)}
+                            disabled={cancelando}
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-border text-foreground font-semibold text-sm hover:bg-muted transition-colors min-h-[44px] disabled:opacity-60"
+                        >
+                            No, volver
+                        </button>
+                    </div>
+                </div>
+              )}
+              {errorCancelar && (
+                <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+                  {errorCancelar}
+                </p>
+            )}
+        </section>
+    )}
         </aside>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowRight,
   ChevronLeft,
@@ -14,8 +14,61 @@ import {
   MessageCircle,
 } from "lucide-react";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
+
+const formatearPrecio = (valor) =>
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(Number(valor) || 0);
+
+function normalizarMueble(m) {
+  const car = Array.isArray(m.caracteristicas)
+    ? m.caracteristicas[0]
+    : m.caracteristicas;
+  const precio = Number(m.precio ?? car?.precio) || 0;
+
+  return {
+    id: m.id,
+    nombre: m.nombre,
+    categoria: m.categoria_nombre ?? "",
+    precio: precio ? formatearPrecio(precio) : "",
+    cuotas: precio ? `6 cuotas fijas de ${formatearPrecio(precio / 6)}` : "",
+    imagen: m.imagen || "/images/prod-sofa.jpg",
+    colores: [],
+    href: `/catalogo/${m.id}`,
+  };
+}
+
 export default function HomePage() {
   const masVendidosRef = useRef(null);
+
+  const [destacados, setDestacados] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function cargarDestacados() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/muebles/destacados/`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        const lista = Array.isArray(data) ? data : (data.results ?? []);
+        if (lista.length > 0) {
+          setDestacados(lista.slice(0, 5).map(normalizarMueble));
+        }
+      } catch {
+        // Si falla, se mantiene el listado de respaldo
+      }
+    }
+
+    cargarDestacados();
+    return () => controller.abort();
+}, []);
 
   // Recomendaciones Hero
   const heroRecomendados = [
@@ -66,7 +119,7 @@ export default function HomePage() {
   ];
 
   // Los Más Vendidos
-  const masVendidos = [
+    const masVendidosEstaticos = [
     {
       id: 1,
       nombre: "Sofá Extensible 3c Beyond",
@@ -108,6 +161,8 @@ export default function HomePage() {
       href: "/catalogo/4",
     },
   ];
+  
+  const masVendidos = destacados ?? masVendidosEstaticos;
 
   // Reseñas de Clientes
   const resenas = [

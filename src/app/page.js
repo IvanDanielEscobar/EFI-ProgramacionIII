@@ -13,6 +13,7 @@ import {
   Phone,
   MessageCircle,
 } from "lucide-react";
+import { mueblesService } from "@/services/api";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
@@ -73,19 +74,19 @@ export default function HomePage() {
   // Recomendaciones Hero
   const heroRecomendados = [
     {
-      id: "rinconero-olala",
+      id: "13",
       titulo: "Rinconero Olala XXL",
       subtitulo: "Tapizado en lino natural antimanchas y estructura maciza en madera de paraíso.",
       imagen: "/images/hero-sofa.jpg",
-      href: "/catalogo?categoria=Living",
+      href: "/catalogo/13",
       etiqueta: "Living & Confort",
     },
     {
-      id: "rinconero-lounge",
+      id: "14",
       titulo: "Rinconero Lounge Petiribí",
       subtitulo: "Líneas puras, respaldos envolventes y mesas auxiliares integradas con veta viva.",
       imagen: "/images/hero-lounge.jpg",
-      href: "/catalogo?categoria=Living",
+      href: "/catalogo/14",
       etiqueta: "Edición Limitada",
     },
   ];
@@ -119,50 +120,67 @@ export default function HomePage() {
   ];
 
   // Los Más Vendidos
-    const masVendidosEstaticos = [
-    {
-      id: 1,
-      nombre: "Sofá Extensible 3c Beyond",
-      categoria: "Living",
-      precio: "$ 385.000",
-      cuotas: "6 cuotas fijas de $ 64.166",
-      imagen: "/images/prod-sofa.jpg",
-      colores: ["#F5F1EA", "#B2967D", "#4A342A"], 
-      href: "/catalogo/1",
-    },
-    {
-      id: 2,
-      nombre: "Silla Vivire S01 Paraíso",
-      categoria: "Comedores",
-      precio: "$ 78.000",
-      cuotas: "6 cuotas fijas de $ 13.000",
-      imagen: "/images/prod-silla.jpg",
-      colores: ["#D7C9B8", "#7D5A44", "#4A342A"],
-      href: "/catalogo/2",
-    },
-    {
-      id: 3,
-      nombre: "Mesa Comedor Extensible C01",
-      categoria: "Comedores",
-      precio: "$ 460.000",
-      cuotas: "6 cuotas fijas de $ 76.666",
-      imagen: "/images/prod-mesa.jpg",
-      colores: ["#B2967D", "#7D5A44"],
-      href: "/catalogo/3",
-    },
-    {
-      id: 4,
-      nombre: "Escritorio Elevable Altura Pro",
-      categoria: "Home Office",
-      precio: "$ 295.000",
-      cuotas: "6 cuotas fijas de $ 49.166",
-      imagen: "/images/prod-escritorio.jpg",
-      colores: ["#F5F1EA", "#4A342A"],
-      href: "/catalogo/4",
-    },
-  ];
-  
-  const masVendidos = destacados ?? masVendidosEstaticos;
+  const [masVendidos, setMasVendidos] = useState([]);
+  const [cargandoVendidos, setCargandoVendidos] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function cargarDestacados() {
+      try {
+        let items = await mueblesService.getDestacados(8);
+        // Si hay menos de 4 con ventas registradas, completamos con los más recientes de la base de datos
+        if (!items || items.length < 4) {
+          const allRes = await mueblesService.getAll({
+            limit: 8,
+            ordering: "-fecha_creacion",
+          });
+          const allItems = allRes.results || [];
+          const ids = new Set((items || []).map((i) => i.id));
+          items = [...(items || [])];
+          for (const extra of allItems) {
+            if (!ids.has(extra.id)) {
+              items.push(extra);
+              ids.add(extra.id);
+            }
+          }
+        }
+
+        if (!mounted) return;
+
+        const mapeados = items.map((m) => ({
+          id: m.id,
+          nombre: m.nombre,
+          categoria: m.categoria,
+          precio: new Intl.NumberFormat("es-AR", {
+            style: "currency",
+            currency: "ARS",
+            maximumFractionDigits: 0,
+          }).format(m.precio || 0),
+          cuotas: `6 cuotas sin interés de ${new Intl.NumberFormat("es-AR", {
+            style: "currency",
+            currency: "ARS",
+            maximumFractionDigits: 0,
+          }).format(Math.round((m.precio || 0) / 6))}`,
+          imagen: m.imagen,
+          colores: ["#F5F1EA", "#B2967D", "#4A342A"],
+          href: `/catalogo/${m.id}`,
+        }));
+
+        setMasVendidos(mapeados);
+      } catch (err) {
+        console.warn("Aviso al cargar muebles destacados:", err.message);
+      } finally {
+        if (mounted) setCargandoVendidos(false);
+      }
+    }
+
+    cargarDestacados();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Reseñas de Clientes
   const resenas = [
@@ -371,72 +389,91 @@ export default function HomePage() {
             className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-none"
             style={{ scrollbarWidth: "none" }}
           >
-            {masVendidos.map((prod) => (
-              <div
-                key={prod.id}
-                className="w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] shrink-0 snap-start group flex flex-col"
-              >
-                {/* Imagen */}
-                <div className="relative aspect-4/3 w-full bg-linen/85 dark:bg-[#201813] rounded-xl overflow-hidden p-4 flex items-center justify-center transition-all group-hover:bg-khaki/40 dark:group-hover:bg-[#281e18]">
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={prod.imagen}
-                      alt={prod.nombre}
-                      fill
-                      sizes="(max-width: 640px) 280px, 320px"
-                      className="object-cover object-center rounded-lg transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
+            {cargandoVendidos ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] shrink-0 snap-start animate-pulse space-y-3 bg-card p-4 rounded-2xl border border-border"
+                >
+                  <div className="aspect-4/3 w-full bg-linen dark:bg-muted rounded-xl" />
+                  <div className="h-4 bg-khaki/30 dark:bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-khaki/20 dark:bg-muted rounded w-1/2" />
+                  <div className="h-5 bg-khaki/30 dark:bg-muted rounded w-1/3 pt-2" />
+                  <div className="h-10 bg-khaki/20 dark:bg-muted rounded-lg w-full mt-2" />
                 </div>
-
-                {/* Info del Producto */}
-                <div className="pt-4 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-bold text-base text-espresso dark:text-linen group-hover:text-cocoa dark:group-hover:text-camel transition-colors leading-snug">
-                        {prod.nombre}
-                      </h3>
-                      <span className="text-xs text-cocoa/80 dark:text-khaki block mt-0.5">
-                        {prod.categoria}
-                      </span>
-                    </div>
-
-                    {/* Muestras de Color */}
-                    <div
-                      aria-label="Opciones de acabado disponibles"
-                      className="flex items-center gap-1.5 shrink-0 pt-1"
-                    >
-                      {prod.colores.map((color, idx) => (
-                        <span
-                          key={idx}
-                          style={{ backgroundColor: color }}
-                          className="w-3.5 h-3.5 rounded-full border border-black/15 dark:border-white/20 shadow-2xs inline-block"
-                          title={`Variante de color ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-1">
-                    <div className="font-extrabold text-lg text-espresso dark:text-linen tracking-tight">
-                      {prod.precio}
-                    </div>
-                    <div className="text-[11px] text-cocoa/90 dark:text-khaki font-medium">
-                      {prod.cuotas}
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <Link
-                      href={prod.href}
-                      className="w-full inline-flex items-center justify-center py-2.5 rounded-lg border border-khaki hover:border-espresso hover:bg-espresso hover:text-linen dark:border-border dark:hover:border-camel dark:hover:bg-camel dark:hover:text-espresso bg-card text-espresso dark:text-linen text-xs font-semibold transition-all min-h-[44px]"
-                    >
-                      Ver Detalle
-                    </Link>
-                  </div>
-                </div>
+              ))
+            ) : masVendidos.length === 0 ? (
+              <div className="p-8 text-center w-full text-xs text-muted-foreground">
+                No hay piezas destacadas disponibles en este momento.
               </div>
-            ))}
+            ) : (
+              masVendidos.map((prod) => (
+                <div
+                  key={prod.id}
+                  className="w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] shrink-0 snap-start group flex flex-col"
+                >
+                  {/* Imagen */}
+                  <div className="relative aspect-4/3 w-full bg-linen/85 dark:bg-[#201813] rounded-xl overflow-hidden p-4 flex items-center justify-center transition-all group-hover:bg-khaki/40 dark:group-hover:bg-[#281e18]">
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={prod.imagen}
+                        alt={prod.nombre}
+                        fill
+                        sizes="(max-width: 640px) 280px, 320px"
+                        className="object-cover object-center rounded-lg transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Info del Producto */}
+                  <div className="pt-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold text-base text-espresso dark:text-linen group-hover:text-cocoa dark:group-hover:text-camel transition-colors leading-snug">
+                          {prod.nombre}
+                        </h3>
+                        <span className="text-xs text-cocoa/80 dark:text-khaki block mt-0.5">
+                          {prod.categoria}
+                        </span>
+                      </div>
+
+                      {/* Muestras de Color */}
+                      <div
+                        aria-label="Opciones de acabado disponibles"
+                        className="flex items-center gap-1.5 shrink-0 pt-1"
+                      >
+                        {prod.colores.map((color, idx) => (
+                          <span
+                            key={idx}
+                            style={{ backgroundColor: color }}
+                            className="w-3.5 h-3.5 rounded-full border border-black/15 dark:border-white/20 shadow-2xs inline-block"
+                            title={`Variante de color ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-1">
+                      <div className="font-extrabold text-lg text-espresso dark:text-linen tracking-tight">
+                        {prod.precio}
+                      </div>
+                      <div className="text-[11px] text-cocoa/90 dark:text-khaki font-medium">
+                        {prod.cuotas}
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <Link
+                        href={prod.href}
+                        className="w-full inline-flex items-center justify-center py-2.5 rounded-lg border border-khaki hover:border-espresso hover:bg-espresso hover:text-linen dark:border-border dark:hover:border-camel dark:hover:bg-camel dark:hover:text-espresso bg-card text-espresso dark:text-linen text-xs font-semibold transition-all min-h-[44px]"
+                      >
+                        Ver Detalle
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

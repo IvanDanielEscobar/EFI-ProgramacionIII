@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -7,41 +10,11 @@ import {
   User,
   Clock,
   Eye,
+  RefreshCw,
 } from "lucide-react";
-
-export const metadata = {
-  title: "Gestión de Pedidos | Dashboard Home & Deco",
-  description: "Control de órdenes de compra, pagos y estado logístico de envíos.",
-};
-
-export const dynamic = "force-dynamic";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
-
-async function obtenerPedidos() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/pedidos/`, {
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      return {
-        pedidos: [],
-        error: `El servidor devolvió un error (${res.status}) al consultar pedidos.`,
-      };
-    }
-
-    const data = await res.json();
-    const lista = Array.isArray(data) ? data : data.results || [];
-    return { pedidos: lista, error: null };
-  } catch {
-    return {
-      pedidos: [],
-      error: "No fue posible conectar con el servicio remoto de órdenes de compra.",
-    };
-  }
-}
+import { pedidosService } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
+import { Alert } from "@/components/Alert";
 
 function BadgeEstado({ estado }) {
   switch (estado) {
@@ -56,7 +29,7 @@ function BadgeEstado({ estado }) {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span>En taller</span>
+          <span>En Preparacion</span>
         </span>
       );
     case "ENVIADO":
@@ -73,6 +46,13 @@ function BadgeEstado({ estado }) {
           <span>Entregado</span>
         </span>
       );
+    case "CANCELADO":
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          <span>Cancelado</span>
+        </span>
+      );
     default:
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground">
@@ -82,8 +62,52 @@ function BadgeEstado({ estado }) {
   }
 }
 
-export default async function DashboardPedidosPage() {
-  const { pedidos, error } = await obtenerPedidos();
+export default function DashboardPedidosPage() {
+  const { token, isAuthenticated } = useAuth();
+  const [pedidos, setPedidos] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const cargarPedidos = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await pedidosService.getAll(token);
+      setPedidos(data);
+    } catch (err) {
+      setError(
+        err.message ||
+          "Error al buscar órdenes de compra. Inicie sesión con un usuario con permisos."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    pedidosService
+      .getAll(token)
+      .then((data) => {
+        if (isMounted) {
+          setPedidos(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(
+            err.message ||
+              "Error al buscar órdenes de compra. Inicie sesión con un usuario con permisos."
+          );
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   return (
     <div className="space-y-6">
@@ -95,14 +119,35 @@ export default async function DashboardPedidosPage() {
           </h1>
         </div>
 
-        {!error && pedidos.length > 0 && (
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-card border border-border text-foreground">
-              Total activos: {pedidos.length} órdenes
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={cargarPedidos}
+            disabled={isLoading}
+            className="p-2.5 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer disabled:opacity-50"
+            title="Recargar pedidos"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+          </button>
+
+          {!error && pedidos.length > 0 && (
+            <span className="text-xs font-semibold px-3 py-2 rounded-xl bg-card border border-border text-foreground">
+              Total: {pedidos.length} {pedidos.length === 1 ? "orden" : "órdenes"}
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* sesión requerida */}
+      {!isAuthenticated && (
+        <Alert variant="warning" title="Acceso restringido">
+          Requiere autenticación. Podés iniciar sesión en{" "}
+          <Link href="/login" className="underline font-bold">
+            login
+          </Link>{" "}
+          para sincronizar con tus credenciales.
+        </Alert>
+      )}
 
       {/* Manejo de Error o Datos No Disponibles */}
       {error ? (
@@ -111,19 +156,27 @@ export default async function DashboardPedidosPage() {
             <AlertCircle className="w-6 h-6" />
           </div>
           <h2 className="font-bold text-base text-espresso dark:text-linen">
-            Información de pedidos no disponible
+            Información no disponible
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
             {error}
           </p>
           <div className="pt-2">
-            <Link
-              href="/dashboard/pedidos"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-linen dark:bg-muted border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+            <button
+              type="button"
+              onClick={cargarPedidos}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-linen dark:bg-muted border border-border text-xs font-semibold text-foreground hover:bg-muted transition-colors cursor-pointer"
             >
               Reintentar
-            </Link>
+            </button>
           </div>
+        </div>
+      ) : isLoading ? (
+        <div className="p-12 text-center rounded-2xl bg-card border border-border space-y-3">
+          <div className="w-8 h-8 border-2 border-camel border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Cargando órdenes...
+          </p>
         </div>
       ) : pedidos.length === 0 ? (
         <div className="p-8 rounded-3xl bg-card border border-border text-center space-y-3 shadow-2xs">
@@ -138,7 +191,7 @@ export default async function DashboardPedidosPage() {
           </p>
         </div>
       ) : (
-        /* Tabla con Columna Extra: Datos del Cliente */
+        /* Tabla con Datos del Pedido */
         <div className="rounded-2xl bg-card border border-border shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
@@ -146,77 +199,79 @@ export default async function DashboardPedidosPage() {
                 <tr>
                   <th className="py-3.5 px-4">Orden #</th>
                   <th className="py-3.5 px-4">Cliente</th>
-                  <th className="py-3.5 px-4">Piezas Compradas</th>
+                  <th className="py-3.5 px-4">Piezas / Detalles</th>
                   <th className="py-3.5 px-4 text-right">Monto Total</th>
                   <th className="py-3.5 px-4 text-center">Estado</th>
-                  <th className="py-3.5 px-4">Entrega</th>
-                  <th className="py-3.5 px-4 text-center">Datos del Cliente</th>
+                  <th className="py-3.5 px-4">Sucursal / Entrega</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {pedidos.map((ped) => (
-                  <tr
-                    key={ped.id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="py-3 px-4 font-mono font-bold text-espresso dark:text-linen">
-                      #{ped.id}
-                      {ped.fecha && (
-                        <span className="block text-[10px] text-muted-foreground font-sans">
-                          {ped.fecha}
+                {pedidos.map((ped) => {
+                  const clienteNombre =
+                    ped.cliente?.usuario_nombre_completo ||
+                    ped.cliente?.usuario_username ||
+                    `Cliente #${ped.cliente?.id || ped.id}`;
+                  const clienteEmail = ped.cliente?.usuario_email || "";
+                  const totalItems = (ped.detalles || []).reduce(
+                    (acc, d) => acc + (d.cantidad || 1),
+                    0
+                  );
+
+                  return (
+                    <tr
+                      key={ped.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="py-3 px-4 font-mono font-bold text-espresso dark:text-linen">
+                        #{ped.numero_pedido || ped.id}
+                        {ped.fecha_creacion && (
+                          <span className="block text-[10px] text-muted-foreground font-sans">
+                            {new Date(ped.fecha_creacion).toLocaleDateString("es-AR")}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="font-semibold text-espresso dark:text-linen block">
+                          {clienteNombre}
                         </span>
-                      )}
-                    </td>
+                        {clienteEmail && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {clienteEmail}
+                          </span>
+                        )}
+                      </td>
 
-                    <td className="py-3 px-4">
-                      <span className="font-semibold text-espresso dark:text-linen block">
-                        {ped.cliente_nombre || ped.cliente || "Cliente"}
-                      </span>
-                      {ped.email && (
-                        <span className="text-[11px] text-muted-foreground">
-                          {ped.email}
+                      <td className="py-3 px-4 text-cocoa/90 dark:text-khaki">
+                        <span className="font-medium block">
+                          {totalItems} {totalItems === 1 ? "mueble" : "muebles"}
                         </span>
-                      )}
-                    </td>
+                        {ped.metodo_pago?.nombre && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {ped.metodo_pago.nombre}
+                          </span>
+                        )}
+                      </td>
 
-                    <td className="py-3 px-4 text-cocoa/90 dark:text-khaki">
-                      <span className="font-medium">
-                        {ped.items_resumen || ped.items?.length
-                          ? `${ped.items.length} piezas`
-                          : "Detalle de muebles"}
-                      </span>
-                      {ped.metodo_pago && (
-                        <span className="block text-[11px] text-muted-foreground">
-                          {ped.metodo_pago}
+                      <td className="py-3 px-4 text-right font-extrabold text-espresso dark:text-linen font-mono">
+                        ${Number(ped.total || 0).toLocaleString("es-AR")}
+                      </td>
+
+                      <td className="py-3 px-4 text-center">
+                        <BadgeEstado estado={ped.estado} />
+                      </td>
+
+                      <td className="py-3 px-4 text-xs text-muted-foreground">
+                        <span className="block font-medium text-foreground">
+                          {ped.sucursal?.nombre || "Casa Central"}
                         </span>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 text-right font-extrabold text-espresso dark:text-linen font-mono">
-                      ${Number(ped.total || 0).toLocaleString("es-AR")}
-                    </td>
-
-                    <td className="py-3 px-4 text-center">
-                      <BadgeEstado estado={ped.estado} />
-                    </td>
-
-                    <td className="py-3 px-4 text-xs text-muted-foreground">
-                      {ped.direccion_envio || ped.entrega || "A coordinar"}
-                    </td>
-
-                    {/* Columna nueva: Botón para ver los datos del cliente */}
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        type="button"
-                        title={`Ver ficha del cliente ${ped.cliente_nombre || ped.cliente || ""}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-linen/50 dark:bg-muted/50 text-xs font-semibold text-cocoa dark:text-khaki hover:bg-espresso hover:text-linen dark:hover:bg-camel dark:hover:text-espresso transition-colors cursor-pointer"
-                      >
-                        <User className="w-3.5 h-3.5" />
-                        <span>Ver Cliente</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        <span className="text-[11px]">
+                          {ped.direccion_entrega || "Retiro en sucursal"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

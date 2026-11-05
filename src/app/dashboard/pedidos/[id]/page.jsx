@@ -27,14 +27,14 @@ const formatearFecha = (iso) =>
 function normalizarPedido(data) {
   return {
     id: data.id,
-    numero: data.numero_pedido,
+    numero: data.numero_pedido || data.id,
     fecha: data.fecha_creacion,
     estado: data.estado_display,
     estadoCodigo: data.estado,
     sucursal: data.sucursal_nombre ?? "—",
     items: (data.detalles ?? []).map((d) => ({
       id: d.id,
-      nombre: d.mueble_nombre ?? "Artículo",
+      nombre: d.mueble?.nombre ?? d.mueble_nombre ?? "Mueble",
       cantidad: d.cantidad,
       precioUnitario: d.precio_unitario,
       subtotal: d.subtotal,
@@ -112,48 +112,7 @@ export default function PedidoDetallePage({ params }) {
     return () => controller.abort();
   }, [id, token, authLoading]);
 
-    async function cancelarPedido() {
-    setCancelando(true);
-    setErrorCancelar(null);
-    try {
-      const response = await fetch(`${API_BASE_URL}/pedidos/${id}/cancelar/`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.status === 401) {
-        throw new Error("Tu sesión expiró. Volvé a iniciar sesión.");
-      }
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(
-          data.detail ||
-            data.error ||
-            data.mensaje ||
-            data.non_field_errors?.[0] ||
-            "No se pudo cancelar el pedido."
-        );
-      }
-
-      // Vuelve a pedir la orden para mostrar el estado actualizado
-      const actualizado = await fetch(`${API_BASE_URL}/pedidos/${id}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (actualizado.ok) {
-        setPedido(normalizarPedido(await actualizado.json()));
-      }
-      setConfirmando(false);
-    } catch (err) {
-      setErrorCancelar(err.message || "Error al conectar con el servidor.");
-    } finally {
-      setCancelando(false);
-    }
-  }
-
-  // Reutiliza el not-found.jsx global del equipo
+  // not-found.jsx
   if (noEncontrado) notFound();
 
   if (authLoading || (token && cargando)) {

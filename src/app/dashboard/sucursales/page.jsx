@@ -1,9 +1,12 @@
 import Link from "next/link";
 import {
-  Store,
   MapPin,
-  ExternalLink,
+  Phone,
+  Mail,
+  Building2,
 } from "lucide-react";
+import { sucursalesService } from "@/services/api";
+import { Alert } from "@/components/Alert";
 
 export const metadata = {
   title: "Gestión de Sucursales | Dashboard Home & Deco",
@@ -12,36 +15,15 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
-
-async function obtenerSucursales() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/sucursales/`, {
-      cache: "no-store",
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const lista = Array.isArray(data) ? data : data.results || [];
-      if (lista.length > 0) {
-        return lista;
-      }
-    }
-  } catch (err) {
-    throw new Error(
-      `Error de conexión: No se pudo conectar con el servicio remoto de sucursales (${err.message}).`
-    );
-  }
-
-  // Si no responde o no hay datos, lanzamos el error según lo requerido
-  throw new Error(
-    "No se encontraron sucursales registradas en el sistema o la API no devolvió datos."
-  );
-}
-
 export default async function DashboardSucursalesPage() {
-  const sucursales = await obtenerSucursales();
+  let sucursales = [];
+  let error = null;
+
+  try {
+    sucursales = await sucursalesService.getAll();
+  } catch (err) {
+    error = err.message || "Error al conectar con la API de sucursales.";
+  }
 
   return (
     <div className="space-y-6">
@@ -52,58 +34,91 @@ export default async function DashboardSucursalesPage() {
             Sucursales
           </h1>
         </div>
+
+        {!error && (
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-card border border-border text-foreground">
+            {sucursales.length} {sucursales.length === 1 ? "sede activa" : "sedes activas"}
+          </span>
+        )}
       </div>
 
-      {/* Grid de Sucursales */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {sucursales.map((suc) => (
-          <div
-            key={suc.id}
-            className="p-6 rounded-3xl bg-card border border-border shadow-xs space-y-5"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <h2 className="text-lg font-bold text-espresso dark:text-linen">
-                  {suc.nombre}
-                </h2>
-                {suc.direccion && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-camel shrink-0" />
-                    <span>{suc.direccion}</span>
-                  </p>
+      {error ? (
+        <Alert variant="warning" title="Aviso del Servidor">
+          {error}
+        </Alert>
+      ) : sucursales.length === 0 ? (
+        <div className="p-8 rounded-3xl bg-card border border-border text-center space-y-3 shadow-2xs">
+          <Building2 className="w-8 h-8 mx-auto text-muted-foreground" />
+          <h2 className="font-bold text-base text-espresso dark:text-linen">
+            No hay sucursales registradas
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            No se encontraron puntos de atención en la base de datos.
+          </p>
+        </div>
+      ) : (
+        /* Grid de Sucursales */
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {sucursales.map((suc) => (
+            <div
+              key={suc.id}
+              className="p-6 rounded-3xl bg-card border border-border shadow-xs space-y-5"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-espresso dark:text-linen">
+                      {suc.nombre}
+                    </h2>
+                  </div>
+                  {suc.direccion && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-camel shrink-0" />
+                      <span>
+                        {suc.direccion}
+                        {suc.ciudad ? ` (${suc.ciudad})` : ""}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-linen/50 dark:bg-muted/40 border border-border space-y-2 text-xs">
+                {suc.provincia && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Provincia:</span>
+                    <span className="font-semibold text-espresso dark:text-linen">
+                      {suc.provincia}
+                    </span>
+                  </div>
+                )}
+                {suc.telefono && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Phone className="w-3 h-3 text-camel" />
+                      Teléfono:
+                    </span>
+                    <span className="font-mono text-espresso dark:text-linen">
+                      {suc.telefono}
+                    </span>
+                  </div>
+                )}
+                {suc.email && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Mail className="w-3 h-3 text-camel" />
+                      Email:
+                    </span>
+                    <span className="text-camel font-medium">
+                      {suc.email}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
-
-            <div className="p-3.5 rounded-2xl bg-linen/50 dark:bg-muted/40 border border-border space-y-2 text-xs">
-              {suc.responsable && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Responsable:</span>
-                  <span className="font-semibold text-espresso dark:text-linen">
-                    {suc.responsable}
-                  </span>
-                </div>
-              )}
-              {suc.telefono && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Teléfono:</span>
-                  <span className="font-mono text-espresso dark:text-linen">
-                    {suc.telefono}
-                  </span>
-                </div>
-              )}
-              {suc.horarios && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Horarios:</span>
-                  <span className="text-camel font-semibold">
-                    {suc.horarios}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -18,6 +18,7 @@ La aplicación frontend fue desarrollada en **Next.js 16 ** y consume la API RES
 
 * **Endpoints:**
   - `POST /api/token/` y `POST /api/token/refresh/`: Autenticación JWT (SimpleJWT).
+  - `POST /api/registro/` (y `/api/auth/registro/`): Registro público de clientes en la tienda con creación automática de usuario (rol `CLIENTE`), perfil y retorno de tokens JWT.
   - `GET /api/muebles/`, `POST /api/muebles/`, `GET /api/muebles/{id}/`, `PATCH /api/muebles/{id}/`, `DELETE /api/muebles/{id}/`: CRUD y listado con búsqueda y filtros.
   - `GET /api/muebles/destacados/`: Muebles con mayor volumen de venta.
   - `GET /api/categorias/`: Categorías de ambientes (*Living, Comedor, Dormitorio, Home Office*).

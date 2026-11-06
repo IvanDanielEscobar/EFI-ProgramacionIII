@@ -20,6 +20,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 
 function RegisterFormContent() {
@@ -40,6 +41,7 @@ function RegisterFormContent() {
     defaultValues: {
       nombre: "",
       email: "",
+      dni_cuit: "",
       username: "",
       password: "",
       confirmPassword: "",
@@ -52,16 +54,22 @@ function RegisterFormContent() {
     setApiError("");
 
     try {
+      const partes = (data.nombre || "").trim().split(/\s+/);
+      const first_name = partes[0] || data.nombre;
+      const last_name = partes.slice(1).join(" ") || "";
+
       await authService.register({
-        username: data.username,
-        email: data.email,
+        username: data.username.trim(),
+        email: data.email.trim(),
         password: data.password,
-        first_name: data.nombre,
+        dni_cuit: data.dni_cuit.trim(),
+        first_name,
+        last_name,
       });
 
       setRegistradoExitoso(true);
       toast.success(
-        `¡Registro completado! Bienvenido/a a Home & Deco, ${data.nombre}.`
+        `¡Registro completado! Bienvenido/a a Home & Deco, ${first_name}.`
       );
 
       setTimeout(() => {
@@ -197,6 +205,38 @@ function RegisterFormContent() {
               {errors.email && (
                 <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                   {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* DNI o CUIT */}
+            <div className="space-y-1">
+              <label
+                htmlFor="dni_cuit"
+                className="block text-xs font-bold uppercase tracking-wider text-espresso dark:text-linen"
+              >
+                DNI / CUIT
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <input
+                  id="dni_cuit"
+                  type="text"
+                  placeholder="Ej: 38123456"
+                  aria-invalid={errors.dni_cuit ? "true" : "false"}
+                  {...register("dni_cuit")}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-linen/40 dark:bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-all min-h-[42px] ${
+                    errors.dni_cuit
+                      ? "border-red-400 focus:ring-red-400"
+                      : "border-border focus:ring-camel focus:border-transparent"
+                  }`}
+                />
+              </div>
+              {errors.dni_cuit && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  {errors.dni_cuit.message}
                 </p>
               )}
             </div>

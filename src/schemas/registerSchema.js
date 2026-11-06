@@ -14,6 +14,16 @@ export const registerSchema = z
       .email("Ingresá un correo electrónico válido")
       .max(100, "El correo no puede superar los 100 caracteres"),
 
+    dni_cuit: z
+      .string({ required_error: "El DNI o CUIT es obligatorio" })
+      .trim()
+      .min(7, "El DNI o CUIT debe tener al menos 7 dígitos")
+      .max(20, "El DNI o CUIT no puede superar los 20 caracteres")
+      .regex(
+        /^[0-9\-.]+$/,
+        "El DNI o CUIT solo debe contener números, puntos o guiones"
+      ),
+
     username: z
       .string({ required_error: "El nombre de usuario es obligatorio" })
       .trim()

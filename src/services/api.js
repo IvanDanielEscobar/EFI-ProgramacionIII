@@ -388,7 +388,7 @@ export const authService = {
       body: JSON.stringify({ refresh }),
     }),
   register: (userData) =>
-    apiFetch("/register/", {
+    apiFetch("/registro/", {
       method: "POST",
       body: JSON.stringify(userData),
     }),

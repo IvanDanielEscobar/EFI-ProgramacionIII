@@ -5,6 +5,7 @@ describe("registerSchema", () => {
   const validData = {
     nombre: "Juan Perez",
     email: "juan.perez@example.com",
+    dni_cuit: "38123456",
     username: "juan_perez",
     password: "Password123",
     confirmPassword: "Password123",
@@ -54,6 +55,15 @@ describe("registerSchema", () => {
     });
     expect(result.success).toBe(false);
     expect(result.error.issues[0].path).toContain("terminos");
+  });
+
+  it("falla si el DNI o CUIT tiene menos de 7 caracteres o formato inválido", () => {
+    const result = registerSchema.safeParse({
+      ...validData,
+      dni_cuit: "123",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error.issues[0].path).toContain("dni_cuit");
   });
 
   it("falla si el nombre de usuario tiene caracteres no permitidos", () => {

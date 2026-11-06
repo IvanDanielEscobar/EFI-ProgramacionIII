@@ -83,13 +83,20 @@ function RegisterFormContent() {
           href="/"
           className="inline-flex items-center gap-2 group p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel rounded-xl"
         >
-          <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-linen dark:bg-card p-1 border border-khaki/60 dark:border-border transition-transform group-hover:scale-105 shadow-2xs">
+          <div className="relative h-12 w-12 shrink-0 transition-transform group-hover:scale-105">
             <Image
-              src="/logo-icon.jpg"
+              src="/logo-icon-transparent.png"
               alt="Home & Deco"
               fill
               sizes="48px"
-              className="object-contain"
+              className="object-contain dark:hidden"
+            />
+            <Image
+              src="/logo-icon-light-stroke.png"
+              alt="Home & Deco"
+              fill
+              sizes="48px"
+              className="object-contain hidden dark:block"
             />
           </div>
         </Link>

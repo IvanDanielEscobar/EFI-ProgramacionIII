@@ -58,7 +58,7 @@ export function ProductCard({
 
   return (
     <article
-      className={`group flex flex-col rounded-2xl bg-card border border-border/70 hover:border-khaki/80 shadow-2xs hover:shadow-lg transition-all duration-300 p-3.5 sm:p-4 ${className}`}
+      className={`group flex flex-col h-full rounded-2xl bg-card border border-border/70 hover:border-khaki/80 shadow-2xs hover:shadow-lg transition-all duration-300 p-3.5 sm:p-4 ${className}`}
     >
       {/* Contenedor  */}
       <div className="relative aspect-4/3 w-full bg-linen/85 dark:bg-[#201813] rounded-xl overflow-hidden p-3 flex items-center justify-center transition-colors group-hover:bg-khaki/30 dark:group-hover:bg-[#281e18]">
@@ -129,14 +129,14 @@ export function ProductCard({
           </div>
 
           <Link href={`/catalogo/${id}`} className="group/link block">
-            <h3 className="font-bold text-base text-espresso dark:text-linen group-hover/link:text-cocoa dark:group-hover/link:text-camel transition-colors line-clamp-1 leading-snug">
+            <h3 className="font-bold text-base text-espresso dark:text-linen group-hover/link:text-cocoa dark:group-hover/link:text-camel transition-colors line-clamp-2 min-h-[2.75rem] leading-snug">
               {nombre}
             </h3>
           </Link>
         </div>
 
         {/* Precio y Cuotas */}
-        <div>
+        <div className="pt-2 min-h-[3rem] flex flex-col justify-end">
           <div className="font-extrabold text-lg text-espresso dark:text-linen tracking-tight">
             {precioFormateado}
           </div>
@@ -146,7 +146,7 @@ export function ProductCard({
         </div>
 
         {/* Acciones */}
-        <div className="pt-1 flex items-center gap-2">
+        <div className="pt-2 flex items-center gap-2 mt-auto">
           <Link
             href={`/catalogo/${id}`}
             className="flex-1 py-2 px-3 rounded-xl border border-khaki hover:border-espresso text-espresso dark:border-border dark:hover:border-camel dark:text-linen text-xs font-semibold text-center hover:bg-linen/50 dark:hover:bg-muted transition-colors min-h-[40px] flex items-center justify-center"

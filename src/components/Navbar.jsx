@@ -22,7 +22,7 @@ import {
   Home,
   Grid,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -33,6 +33,9 @@ export function Navbar() {
   const isAuth = mounted && isAuthenticated;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [isMobileVisible, setIsMobileVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
   const handleLogout = () => {
     logout();
     setMobileMenuOpen(false);
@@ -42,12 +45,50 @@ export function Navbar() {
   };
   const [prevPathname, setPrevPathname] = useState(pathname);
 
-  // Cerrar menu movil al navegar
+  // Cerrar menu movil y restaurar visibilidad al navegar
   if (prevPathname !== pathname) {
     setPrevPathname(pathname);
     setMobileMenuOpen(false);
     setActiveDropdown(null);
+    setIsMobileVisible(true);
   }
+
+  // Detección de scroll: fijar en desktop y ocultar/reaparecer en móviles
+  useEffect(() => {
+    const handleScroll = () => {
+      // En desktop (>= 1024px), el navbar permanece siempre fijo y visible
+      if (window.innerWidth >= 1024) {
+        setIsMobileVisible(true);
+        return;
+      }
+
+      const currentScrollY = window.scrollY;
+
+      // Si el menú móvil está abierto o estamos casi arriba, siempre visible
+      if (mobileMenuOpen || currentScrollY <= 20) {
+        setIsMobileVisible(true);
+        lastScrollY.current = currentScrollY;
+        return;
+      }
+
+      const delta = currentScrollY - lastScrollY.current;
+      // Umbral para evitar vibraciones en pantallas táctiles
+      if (Math.abs(delta) < 8) return;
+
+      if (delta > 0 && currentScrollY > 70) {
+        // Scrolleando hacia abajo -> ocultar en móvil
+        setIsMobileVisible(false);
+      } else if (delta < 0) {
+        // Scrolleando hacia arriba -> reaparecer inmediatamente
+        setIsMobileVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [mobileMenuOpen]);
 
   // Escape y scroll lock
   useEffect(() => {
@@ -180,53 +221,67 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full transition-colors duration-200">
-      {/* Barra de Anuncio Arriba de la navbar principal */}
+    <header className="sticky top-0 z-40 w-full">
+      {/* transición para móviles */}
       <div
-        aria-label="Venta telefónica y WhatsApp"
-        className="bg-espresso text-linen text-[10px] sm:text-[11px] font-normal py-1.5 sm:py-2 px-3 sm:px-4 text-center tracking-wide border-b border-[#38261e] dark:border-border transition-colors truncate"
+        className={`w-full transition-transform duration-300 ease-in-out ${
+          isMobileVisible ? "translate-y-0" : "-translate-y-full lg:translate-y-0"
+        }`}
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-4 truncate">
-          <span className="tracking-wide truncate">
-            ESCRIBINOS POR WHATSAPP AL{" "}
-            <strong className="font-semibold text-camel hover:underline cursor-pointer">
-              (+54 9 11) 6668-1012
-            </strong>
-          </span>
-          <span className="hidden md:inline text-camel opacity-60">•</span>
-          <span className="hidden md:inline text-khaki font-light tracking-wider">
-            RETIRO EN SHOWROOM RÍO CUARTO
-          </span>
+        {/* Barra de Anuncio Arriba de la navbar principal */}
+        <div
+          aria-label="Venta telefónica y WhatsApp"
+          className="bg-espresso text-linen text-[10px] sm:text-[11px] font-normal py-1.5 sm:py-2 px-3 sm:px-4 text-center tracking-wide border-b border-[#38261e] dark:border-border transition-colors truncate"
+        >
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-4 truncate">
+            <span className="tracking-wide truncate">
+              ESCRIBINOS POR WHATSAPP AL{" "}
+              <strong className="font-semibold text-camel hover:underline cursor-pointer">
+                (+54 9 11) 6668-1012
+              </strong>
+            </span>
+            <span className="hidden md:inline text-camel opacity-60">•</span>
+            <span className="hidden md:inline text-khaki font-light tracking-wider">
+              RETIRO EN SHOWROOM RÍO CUARTO
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Navbar Principal */}
-      <nav
-        aria-label="Navegación principal"
-        className="w-full border-b border-border/80 bg-background/95 dark:bg-[#18120e]/95 backdrop-blur-md shadow-xs"
-      >
+        {/* Navbar Principal */}
+        <nav
+          aria-label="Navegación principal"
+          className="w-full border-b border-border/80 bg-background/95 dark:bg-[#18120e]/95 backdrop-blur-md shadow-xs"
+        >
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-6">
           {/* Logo de Home & Deco */}
           <Link
             href="/"
             aria-label="Home & Deco — Inicio"
-            className="flex items-center gap-2 sm:gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel rounded-xl p-1 min-w-0 shrink"
+            className="flex items-center gap-2 sm:gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel rounded-xl p-1 shrink-0"
           >
-            <div className="relative h-9 w-9 sm:h-11 sm:w-11 overflow-hidden rounded-xl bg-linen dark:bg-card p-1 border border-khaki/50 dark:border-border transition-transform group-hover:scale-105 shrink-0 shadow-2xs">
+            <div className="relative h-9 w-9 sm:h-11 sm:w-11 shrink-0 transition-transform group-hover:scale-105">
               <Image
-                src="/logo-icon.jpg"
+                src="/logo-icon-transparent.png"
                 alt="Isotipo Home & Deco"
                 fill
                 priority
                 sizes="44px"
-                className="object-contain"
+                className="object-contain dark:hidden"
+              />
+              <Image
+                src="/logo-icon-light-stroke.png"
+                alt="Isotipo Home & Deco"
+                fill
+                priority
+                sizes="44px"
+                className="object-contain hidden dark:block"
               />
             </div>
-            <div className="min-w-0">
-              <span className="font-extrabold text-base sm:text-xl md:text-2xl tracking-wider block leading-none text-espresso dark:text-linen font-sans truncate">
+            <div>
+              <span className="font-extrabold text-base sm:text-xl md:text-2xl tracking-wider block leading-none text-espresso dark:text-linen font-sans">
                 HOME & DECO
               </span>
-              <span className="text-[8px] sm:text-[9px] tracking-[0.18em] sm:tracking-[0.28em] uppercase text-cocoa dark:text-camel font-semibold block mt-0.5 sm:mt-1 truncate">
+              <span className="text-[8px] sm:text-[9px] tracking-[0.18em] sm:tracking-[0.28em] uppercase text-cocoa dark:text-camel font-semibold block mt-0.5 sm:mt-1">
                 Mueblería & Diseño
               </span>
             </div>
@@ -388,6 +443,7 @@ export function Navbar() {
           </div>
         </div>
       </nav>
+      </div>
 
       {/* Menu Movil Desplegable */}
       {mobileMenuOpen && (
@@ -504,7 +560,11 @@ export function Navbar() {
       )}
 
       {/* Navbar Movil */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 dark:bg-[#18120e]/95 backdrop-blur-md border-t border-border py-1.5 px-3 flex items-center justify-around shadow-lg">
+      <div
+        className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 dark:bg-[#18120e]/95 backdrop-blur-md border-t border-border py-1.5 px-3 flex items-center justify-around shadow-lg transition-transform duration-300 ease-in-out ${
+          isMobileVisible ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
         <Link
           href="/"
           className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] text-[10px] font-medium transition-colors ${

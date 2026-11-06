@@ -131,9 +131,33 @@ export async function apiFetch(endpoint, options = {}) {
   const data = isJson ? await response.json().catch(() => null) : await response.text().catch(() => null);
 
   if (!response.ok) {
-    const errorMsg =
-      (data && (data.detail || data.non_field_errors?.[0] || data.mensaje || (typeof data === "object" ? JSON.stringify(data) : null))) ||
-      `Error HTTP ${response.status}: ${response.statusText}`;
+    let errorMsg = null;
+    if (data && typeof data === "object") {
+      if (typeof data.detail === "string") {
+        errorMsg = data.detail;
+      } else if (Array.isArray(data.non_field_errors) && data.non_field_errors.length > 0) {
+        errorMsg = data.non_field_errors.join(", ");
+      } else if (typeof data.mensaje === "string") {
+        errorMsg = data.mensaje;
+      } else {
+        const fieldErrors = Object.entries(data)
+          .filter(([_, val]) => val !== null && val !== undefined)
+          .map(([field, msgs]) => {
+            const msgStr = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+            return `${field}: ${msgStr}`;
+          })
+          .join(" | ");
+        if (fieldErrors) errorMsg = fieldErrors;
+      }
+    }
+
+    if (!errorMsg) {
+      errorMsg =
+        response.status === 404
+          ? `Error intente nuevamente mas tarde.`
+          : `Error HTTP ${response.status}: ${response.statusText}`;
+    }
+
     const error = new Error(errorMsg);
     error.status = response.status;
     error.data = data;
@@ -363,22 +387,11 @@ export const authService = {
       method: "POST",
       body: JSON.stringify({ refresh }),
     }),
-  register: async (userData) => {
-    try {
-      return await apiFetch("/usuarios/", {
-        method: "POST",
-        body: JSON.stringify(userData),
-      });
-    } catch {
-      // Si el backend DRF no tiene endpoint público de autoservicio de registro,
-      // resolvemos el alta exitosa para la experiencia de usuario
-      return {
-        success: true,
-        message: "Usuario registrado con éxito en Home & Deco.",
-        user: { username: userData.username, email: userData.email },
-      };
-    }
-  },
+  register: (userData) =>
+    apiFetch("/register/", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    }),
 };
 
 /* SERVICIO DE PEDIDOS */

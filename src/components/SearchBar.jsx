@@ -45,12 +45,13 @@ export function SearchBar({
       </div>
 
       <input
-        type="search"
+        type="text"
+        inputMode="search"
         value={searchTerm}
         onChange={handleChange}
         placeholder={placeholder}
         aria-label="Buscar en catálogo"
-        className="w-full bg-card text-foreground rounded-xl border border-border pl-10 pr-10 py-2.5 text-sm min-h-[44px] transition-all outline-none placeholder:text-muted-foreground/70 hover:border-khaki/80 focus:border-camel focus:ring-2 focus:ring-camel/30 shadow-2xs"
+        className="w-full bg-card text-foreground rounded-xl border border-border pl-10 pr-10 py-2.5 text-sm min-h-[44px] transition-all outline-none placeholder:text-muted-foreground/70 hover:border-khaki/80 focus:border-camel focus:ring-2 focus:ring-camel/30 shadow-2xs [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
       />
 
       {searchTerm && (

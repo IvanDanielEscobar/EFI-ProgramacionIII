@@ -103,7 +103,7 @@ function LoginFormContent() {
           Acceso al Sistema
         </h1>
         <p className="text-xs sm:text-sm text-cocoa/80 dark:text-khaki">
-          Ingresá tus credenciales para autenticarte.
+          Ingresá tus datos para acceder
         </p>
       </div>
 
@@ -115,11 +115,8 @@ function LoginFormContent() {
         >
           <div className="flex items-center gap-2 font-bold">
             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>Permisos Insuficientes para Dashboard</span>
+            <span>Permisos denegados</span>
           </div>
-          <p className="text-amber-800/90 dark:text-amber-300/90 text-xs">
-            El panel administrativo está restringido a personal con rol de <strong>Empleado</strong> o <strong>Administrador</strong>. Si tenés una cuenta de empleado, ingresá con ella a continuación.
-          </p>
         </div>
       )}
 
@@ -261,8 +258,7 @@ function LoginFormContent() {
             {/* Usuarios de prueba backend DRF */}
             <div className="p-3.5 rounded-2xl bg-linen/60 dark:bg-muted/30 border border-border text-[11px] text-muted-foreground space-y-1.5">
               <p className="font-semibold text-espresso dark:text-linen flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-camel" />
-                <span>Usuarios de prueba del Backend DRF:</span>
+                <span>Usuarios de prueba del Backend:</span>
               </p>
               <p>
                 • <strong>Admin (Superadmin):</strong> <code className="text-camel font-bold">admin</code> / <code className="text-camel">admin123</code>

@@ -2,204 +2,192 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   MapPin,
-  Clock,
   Phone,
   Mail,
   Store,
-  Navigation,
-  CheckCircle2,
-  Calendar,
   MessageCircle,
+  ExternalLink,
 } from "lucide-react";
+import { sucursalesService } from "@/services/api";
+import { Badge } from "@/components/Badge";
+import { Alert } from "@/components/Alert";
+import { EmptyState } from "@/components/EmptyState";
 
 export const metadata = {
   title: "Sucursales & Showrooms | Home & Deco",
   description:
-    "Visitanos en nuestro Showroom principal de Río Cuarto o en nuestro punto de entrega Córdoba Capital. Asesoramiento en diseño de interiores y retiro inmediato.",
+    "Puntos de atención y showrooms oficiales de Home & Deco. Asesoramiento en diseño de interiores y retiro de compras.",
 };
 
-const SUCURSALES = [
-  {
-    id: "rio-cuarto",
-    nombre: "Showroom Central Río Cuarto",
-    tipo: "Showroom & Venta al Público",
-    direccion: "Wenceslao Tejerina Norte 783",
-    localidad: "Río Cuarto, Córdoba",
-    codigoPostal: "X5800",
-    telefono: "+54 (11) 6668-1012",
-    whatsapp: "+54 9 11 6668-1012",
-    email: "riocuarto@homedeco.com.ar",
-    horarios: [
-      { dias: "Lunes a Viernes", horas: "9:00 a 13:00 hs y 16:30 a 20:30 hs" },
-      { dias: "Sábados", horas: "9:30 a 13:30 hs" },
-      { dias: "Domingos y Feriados", horas: "Cerrado" },
-    ],
-    servicios: [
-      "Exhibición completa de Living, Comedores y Dormitorios",
-      "Asesoramiento personalizado con diseñadores de interiores",
-      "Muestrarios de maderas nobles y tapizados al tacto",
-      "Punto de retiro gratis de compras online",
-      "Estacionamiento exclusivo para clientes",
-    ],
-    imagen: "/images/showroom.jpg",
-    destacada: true,
-  },
-  {
-    id: "cordoba-capital",
-    nombre: "Punto Logístico & Pick-Up Córdoba",
-    tipo: "Punto de Retiro & Asesoramiento Comercial",
-    direccion: "Av. Rafael Núñez 4210, Cerro de las Rosas",
-    localidad: "Córdoba Capital",
-    codigoPostal: "X5009",
-    telefono: "+54 (351) 482-9901",
-    whatsapp: "+54 9 11 6668-1012",
-    email: "cordoba@homedeco.com.ar",
-    horarios: [
-      { dias: "Lunes a Viernes", horas: "10:00 a 18:00 hs (corrido)" },
-      { dias: "Sábados", horas: "10:00 a 14:00 hs" },
-    ],
-    servicios: [
-      "Retiro express de muebles embalados",
-      "Catálogo físico de tapizados y acabados",
-      "Coordinación de fletes y logística interprovincial",
-    ],
-    imagen: "/images/cat-living.jpg",
-    destacada: false,
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function SucursalesPage() {
+export default async function SucursalesPage() {
+  let sucursales = [];
+  let error = null;
+
+  try {
+    sucursales = await sucursalesService.getAll();
+  } catch (err) {
+    error = err.message || "No fue posible conectar con el servidor para obtener las sucursales.";
+  }
+
   return (
     <div className="w-full bg-background min-h-screen py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto space-y-12">
+      <div className="max-w-7xl mx-auto space-y-10">
         {/* Encabezado */}
         <header className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-camel/15 text-camel text-xs font-bold uppercase tracking-widest border border-camel/20">
-            <Store className="w-4 h-4" />
-            <span>Espacios de Experiencia</span>
-          </div>
+      
           <h1 className="text-3xl sm:text-5xl font-extrabold text-espresso dark:text-linen tracking-tight">
-            Nuestras Sucursales & Showrooms
+            Nuestras Sucursales
           </h1>
           <p className="text-sm sm:text-base text-cocoa/80 dark:text-khaki leading-relaxed">
-            Vení a experimentar la nobleza de nuestras maderas, sentarte en
-            nuestros sillones y conversar con nuestros asesores de diseño para
-            armar tu hogar soñado.
+            Acercate a nuestros locales para experimentar la calidad de nuestros muebles y recibir asesoramiento personalizado.
           </p>
         </header>
 
-        {/* Listado de Sucursales */}
-        <div className="space-y-10">
-          {SUCURSALES.map((sucursal) => (
-            <article
-              key={sucursal.id}
-              className={`rounded-3xl bg-card border overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-12 transition-all duration-300 ${
-                sucursal.destacada
-                  ? "border-camel/60 shadow-md ring-1 ring-camel/30"
-                  : "border-border"
-              }`}
+        {/* Error si la API falla */}
+        {error && (
+          <div className="max-w-3xl mx-auto">
+            <Alert
+              variant="warning"
+              title="Aviso del Servidor"
+              action={
+                <Link
+                  href="/sucursales"
+                  className="text-xs font-bold underline hover:opacity-80"
+                >
+                  Reintentar
+                </Link>
+              }
             >
-              {/* Imagen del Showroom */}
-              <div className="relative lg:col-span-5 min-h-[260px] lg:min-h-full bg-linen dark:bg-espresso/20">
-                <Image
-                  src={sucursal.imagen}
-                  alt={sucursal.nombre}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                  className="object-cover"
-                />
-                <span className="absolute top-4 left-4 bg-card/90 backdrop-blur-md border border-border text-xs font-bold uppercase tracking-wider text-espresso dark:text-linen px-3 py-1.5 rounded-lg">
-                  {sucursal.tipo}
-                </span>
-              </div>
+              {error} (Compruebe que el servicio de backend en Render esté activo).
+            </Alert>
+          </div>
+        )}
 
-              {/* Contenido */}
-              <div className="p-6 sm:p-8 lg:p-10 lg:col-span-7 flex flex-col justify-between space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold text-espresso dark:text-linen tracking-tight">
-                      {sucursal.nombre}
-                    </h2>
-                    <p className="flex items-center gap-2 text-sm text-camel font-medium mt-1">
-                      <MapPin className="w-4 h-4 shrink-0" />
-                      <span>
-                        {sucursal.direccion}, {sucursal.localidad} (CP: {sucursal.codigoPostal})
-                      </span>
-                    </p>
+        {/* Estado Vacío */}
+        {!error && sucursales.length === 0 && (
+          <EmptyState
+            icon={Store}
+            title="No hay sucursales registradas"
+            description="En este momento no se encontraron puntos de atención disponibles en la base de datos."
+            action={
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-espresso text-linen dark:bg-camel dark:text-espresso text-xs font-semibold uppercase tracking-wider transition-colors hover:bg-cocoa shadow-2xs"
+              >
+                Volver al Inicio
+              </Link>
+            }
+          />
+        )}
+
+        {/* Listado de Sucursales de la Base de Datos */}
+        {!error && sucursales.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sucursales.map((sucursal) => {
+              const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                `${sucursal.direccion}, ${sucursal.ciudad || ""}, ${sucursal.provincia || "Córdoba"}`
+              )}`;
+
+              const whatsappUrl = `https://wa.me/5491166681012?text=${encodeURIComponent(
+                `Hola Home & Deco! Quiero consultar sobre la sede ${sucursal.nombre} (${sucursal.direccion})`
+              )}`;
+
+              return (
+                <article
+                  key={sucursal.id}
+                  className="rounded-3xl bg-card border border-border overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+                >
+                  {/* Imagen */}
+                  <div className="relative h-48 w-full bg-linen dark:bg-card">
+                    <Image
+                      src="/images/showroom.jpg"
+                      alt={sucursal.nombre}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover"
+                    />
+                    <div className="absolute top-3 left-3">
+                    </div>
                   </div>
 
-                  {/* Horarios */}
-                  <div className="p-4 rounded-2xl bg-linen/50 dark:bg-muted/40 border border-border space-y-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-espresso dark:text-linen flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-camel" />
-                      <span>Horarios de Atención</span>
-                    </span>
-                    <ul className="space-y-1 text-xs">
-                      {sucursal.horarios.map((h, i) => (
-                        <li key={i} className="flex justify-between text-muted-foreground">
-                          <span className="font-medium text-espresso dark:text-linen">
-                            {h.dias}:
+                  {/* Datos */}
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
+                    <div className="space-y-3">
+                      <h2 className="text-xl font-bold text-espresso dark:text-linen tracking-tight">
+                        {sucursal.nombre}
+                      </h2>
+
+                      <div className="space-y-2 text-xs text-cocoa/90 dark:text-khaki">
+                        {/* Dirección */}
+                        <div className="flex items-start gap-2.5">
+                          <MapPin className="w-4 h-4 text-camel shrink-0 mt-0.5" />
+                          <span>
+                            {sucursal.direccion}
+                            {sucursal.ciudad && `, ${sucursal.ciudad}`}
+                            {sucursal.provincia && `, ${sucursal.provincia}`}
                           </span>
-                          <span>{h.horas}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                        </div>
 
-                  {/* Servicios ofrecidos */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-espresso dark:text-linen">
-                      Servicios en este espacio:
-                    </span>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {sucursal.servicios.map((s, i) => (
-                        <li key={i} className="flex items-start gap-2 text-cocoa/90 dark:text-khaki">
-                          <CheckCircle2 className="w-4 h-4 text-camel shrink-0 mt-0.5" />
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+                        {/* Teléfono */}
+                        {sucursal.telefono && (
+                          <div className="flex items-center gap-2.5">
+                            <Phone className="w-4 h-4 text-camel shrink-0" />
+                            <a
+                              href={`tel:${sucursal.telefono}`}
+                              className="hover:text-espresso dark:hover:text-linen hover:underline"
+                            >
+                              {sucursal.telefono}
+                            </a>
+                          </div>
+                        )}
 
-                {/* Contacto y Botones */}
-                <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-4">
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>
-                      <strong>Teléfono:</strong> {sucursal.telefono}
-                    </p>
-                    <p>
-                      <strong>Email:</strong> {sucursal.email}
-                    </p>
-                  </div>
+                        {/* Email */}
+                        {sucursal.email && (
+                          <div className="flex items-center gap-2.5">
+                            <Mail className="w-4 h-4 text-camel shrink-0" />
+                            <a
+                              href={`mailto:${sucursal.email}`}
+                              className="hover:text-espresso dark:hover:text-linen hover:underline truncate"
+                            >
+                              {sucursal.email}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <a
-                      href={`https://wa.me/${sucursal.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
-                        `Hola Home & Deco! Quiero coordinar una visita al showroom de ${sucursal.nombre}`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso text-xs font-semibold uppercase tracking-wider transition-all min-h-[42px] shadow-xs"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>Escribinos</span>
-                    </a>
+                    {/* Botones de Acción */}
+                    <div className="pt-4 border-t border-border flex flex-col sm:flex-row gap-2">
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-semibold text-xs tracking-wider uppercase transition-all shadow-2xs"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-900" />
+                        <span>WhatsApp</span>
+                      </a>
 
-                    <Link
-                      href="/catalogo"
-                      className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-colors min-h-[42px]"
-                    >
-                      Ver Catálogo
-                    </Link>
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-colors"
+                        title="Ver ubicación en Google Maps"
+                      >
+                        <span>Cómo llegar</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                      </a>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

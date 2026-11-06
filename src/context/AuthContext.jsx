@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { authService } from "@/services/api";
 
 const AuthContext = createContext({
   user: null,
@@ -30,9 +31,6 @@ function decodeJwt(token) {
     return null;
   }
 }
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => {
@@ -78,25 +76,7 @@ export function AuthProvider({ children }) {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/token/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const errorMessage =
-          data.detail ||
-          data.non_field_errors?.[0] ||
-          "Usuario o contraseña incorrectos.";
-        setError(errorMessage);
-        setIsLoading(false);
-        return { success: false, error: errorMessage };
-      }
+      const data = await authService.login(username, password);
 
       const decoded = decodeJwt(data.access);
       const userData = {
@@ -124,7 +104,7 @@ export function AuthProvider({ children }) {
       setIsLoading(false);
       return { success: true, user: userData };
     } catch (err) {
-      const msg = err.message || "Error al conectar con el servidor.";
+      const msg = err.message || "Usuario o contraseña incorrectos.";
       setError(msg);
       setIsLoading(false);
       return { success: false, error: msg };
@@ -155,17 +135,9 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh: refreshToken }),
-      });
+      const data = await authService.refreshToken(refreshToken);
 
-      const data = await response.json();
-
-      if (response.ok && data.access) {
+      if (data?.access) {
         setToken(data.access);
         localStorage.setItem("home-deco-access-token", data.access);
         document.cookie = `auth_token=${data.access}; path=/; max-age=86400; SameSite=Lax;`;

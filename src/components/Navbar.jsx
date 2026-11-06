@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -27,12 +27,20 @@ import { Buscador } from "@/components/Buscador";
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
   const isAuth = mounted && isAuthenticated;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+    if (pathname.startsWith("/dashboard")) {
+      router.push("/login");
+    }
+  };
   const [prevPathname, setPrevPathname] = useState(pathname);
 
   // Cerrar menu movil y buscador al navegar
@@ -365,7 +373,7 @@ export function Navbar() {
                 </Link>
 
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   type="button"
                   aria-label="Cerrar sesión"
                   title="Cerrar Sesión"
@@ -473,10 +481,7 @@ export function Navbar() {
                     <span>Dashboard</span>
                   </Link>
                   <button
-                    onClick={() => {
-                      logout();
-                      setMobileMenuOpen(false);
-                    }}
+                    onClick={handleLogout}
                     type="button"
                     className="flex items-center justify-center gap-2 py-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 font-medium text-sm min-h-[44px]"
                   >

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
+const RUTAS_PROTEGIDAS = ["/dashboard", "/muebles/nuevo"];
 export function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // Proteger todas las rutas bajo /dashboard
-  if (pathname.startsWith("/dashboard")) {
+    if (RUTAS_PROTEGIDAS.some((ruta) => pathname.startsWith(ruta))) {
     const authToken = request.cookies.get("auth_token")?.value;
     const userRole = request.cookies.get("user_role")?.value;
 
@@ -27,5 +28,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/muebles/nuevo"],
 };

@@ -4,6 +4,7 @@ import { mueblesService, categoriasService } from "@/services/api";
 import { ProductCard } from "@/components/ProductCard";
 import { Alert } from "@/components/Alert";
 import { EmptyState } from "@/components/EmptyState";
+import { Buscador } from "@/components/Buscador";
 
 export const metadata = {
   title: "Catálogo de Muebles & Diseño | Home & Deco",
@@ -25,7 +26,7 @@ export default async function CatalogoPage({ searchParams }) {
   let error = null;
   let categoriasLista = [];
 
-  // Petición a la API de DRF
+  // Peticion a la API 
   try {
     const [mueblesData, categoriasData] = await Promise.all([
       mueblesService.getAll({
@@ -47,43 +48,27 @@ export default async function CatalogoPage({ searchParams }) {
     error = err.message || "No se pudo conectar con el servidor de Home & Deco.";
   }
 
-  // Si la API de categorías no devolvió resultados o está offline, usamos la lista base
+  // Categorías directamente obtenidas desde la base de datos
   const categoriasFiltro = [
     { id: "todas", label: "Todos", query: "" },
-    ...(categoriasLista.length > 0
-      ? categoriasLista.map((cat) => ({
-          id: String(cat.id),
-          label: cat.nombre,
-          query: cat.nombre,
-        }))
-      : [
-          { id: "Living", label: "Living & Sala", query: "Living" },
-          { id: "Comedor", label: "Comedor", query: "Comedor" },
-          { id: "Dormitorio", label: "Dormitorio", query: "Dormitorio" },
-          { id: "Oficina", label: "Home Office", query: "Oficina" },
-          { id: "Exterior", label: "Exterior", query: "Exterior" },
-        ]),
+    ...categoriasLista.map((cat) => ({
+      id: String(cat.id),
+      label: cat.nombre,
+      query: cat.nombre,
+    })),
   ];
 
   return (
     <div className="w-full bg-background min-h-screen py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Encabezado */}
-        <header className="space-y-3">
+        <header className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-camel mb-1">
-                Colección 2026
-              </p>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-espresso dark:text-linen tracking-tight">
-                Catálogo de Piezas
+                Catálogo 2026
               </h1>
             </div>
-            {!error && (
-              <span className="text-xs font-medium text-muted-foreground bg-card border border-border px-3.5 py-1.5 rounded-full w-fit shadow-2xs">
-                {totalCount} {totalCount === 1 ? "mueble disponible" : "muebles disponibles"}
-              </span>
-            )}
           </div>
         </header>
 
@@ -105,48 +90,16 @@ export default async function CatalogoPage({ searchParams }) {
           </Alert>
         )}
 
-        {/* Barra de Filtros y Ordenamiento */}
-        <div className="bg-card border border-border rounded-2xl p-4 shadow-2xs space-y-4">
+        {/* Barra de Filtros y Búsqueda */}
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-5 shadow-2xs space-y-4">
+          {/* Buscador y Orden */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            {/* Filtros por Categoría */}
-            <nav
-              aria-label="Filtro por ambiente"
-              className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none"
-            >
-              {categoriasFiltro.map((cat) => {
-                const isActive =
-                  (!categoriaSeleccionada && cat.query === "") ||
-                  (categoriaSeleccionada &&
-                    cat.query.toLowerCase() === categoriaSeleccionada.toLowerCase());
-
-                const params = new URLSearchParams();
-                if (cat.query) params.set("categoria", cat.query);
-                if (queryBusqueda) params.set("search", queryBusqueda);
-                if (orderingSeleccionado && orderingSeleccionado !== "-fecha_creacion") {
-                  params.set("ordering", orderingSeleccionado);
-                }
-
-                const queryString = params.toString();
-                const href = queryString ? `/catalogo?${queryString}` : "/catalogo";
-
-                return (
-                  <Link
-                    key={cat.id}
-                    href={href}
-                    className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold tracking-wide whitespace-nowrap transition-all min-h-[40px] flex items-center justify-center ${
-                      isActive
-                        ? "bg-espresso text-linen dark:bg-camel dark:text-espresso shadow-xs"
-                        : "text-cocoa/90 dark:text-khaki hover:text-espresso dark:hover:text-linen hover:bg-muted"
-                    }`}
-                  >
-                    {cat.label}
-                  </Link>
-                );
-              })}
-            </nav>
+            <div className="w-full md:max-w-md">
+              <Buscador placeholder="Buscar por nombre, madera o color..." />
+            </div>
 
             {/* Ordenamiento por Precio */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 self-start md:self-auto">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
                 <ArrowUpDown className="w-3.5 h-3.5" />
                 Ordenar:
@@ -197,9 +150,53 @@ export default async function CatalogoPage({ searchParams }) {
               </div>
             </div>
           </div>
+
+          <div className="h-px bg-border/60" />
+
+          {/* Filtros por Categoría */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+              Filtrar por Categoria:
+            </span>
+            <nav
+              aria-label="Filtro por ambiente"
+              className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none"
+            >
+              {categoriasFiltro.map((cat) => {
+                const isActive =
+                  (!categoriaSeleccionada && cat.query === "") ||
+                  (categoriaSeleccionada &&
+                    cat.query.toLowerCase() === categoriaSeleccionada.toLowerCase());
+
+                const params = new URLSearchParams();
+                if (cat.query) params.set("categoria", cat.query);
+                if (queryBusqueda) params.set("search", queryBusqueda);
+                if (orderingSeleccionado && orderingSeleccionado !== "-fecha_creacion") {
+                  params.set("ordering", orderingSeleccionado);
+                }
+
+                const queryString = params.toString();
+                const href = queryString ? `/catalogo?${queryString}` : "/catalogo";
+
+                return (
+                  <Link
+                    key={cat.id}
+                    href={href}
+                    className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold tracking-wide whitespace-nowrap transition-all min-h-[40px] flex items-center justify-center ${
+                      isActive
+                        ? "bg-espresso text-linen dark:bg-camel dark:text-espresso shadow-xs"
+                        : "text-cocoa/90 dark:text-khaki hover:text-espresso dark:hover:text-linen hover:bg-muted"
+                    }`}
+                  >
+                    {cat.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
         </div>
 
-        {/* Indicador de filtro de búsqueda activo */}
+        {/* Indicador de filtro de búsqueda */}
         {queryBusqueda && (
           <div className="p-4 rounded-2xl bg-card border border-border flex items-center justify-between text-xs sm:text-sm text-foreground shadow-2xs">
             <div className="flex items-center gap-2.5">

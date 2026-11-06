@@ -23,20 +23,24 @@ import {
   Grid,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Buscador } from "@/components/Buscador";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, mounted } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
+  const isAuth = mounted && isAuthenticated;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
 
-  // Cerrar menu movil al navegar
+  // Cerrar menu movil y buscador al navegar
   if (prevPathname !== pathname) {
     setPrevPathname(pathname);
     setMobileMenuOpen(false);
     setActiveDropdown(null);
+    setSearchOpen(false);
   }
 
   // Escape y scroll lock
@@ -45,6 +49,7 @@ export function Navbar() {
       if (e.key === "Escape") {
         setMobileMenuOpen(false);
         setActiveDropdown(null);
+        setSearchOpen(false);
       }
     };
     if (mobileMenuOpen) {
@@ -63,22 +68,96 @@ export function Navbar() {
     {
       nombre: "Living",
       href: "/catalogo?categoria=Living",
-      destacados: ["Sillones 3 Cuerpos", "Mesas Ratonas", "Racks TV Japandi", "Poltronas Nórdicas"],
+      destacados: [
+        {
+          label: "Rinconeros Lounge & XXL",
+          href: "/catalogo?categoria=Living&search=Rinconero",
+        },
+        {
+          label: "Sofás Extensibles",
+          href: "/catalogo?categoria=Living&search=Extensible",
+        },
+        {
+          label: "Sillón Chesterfield",
+          href: "/catalogo?categoria=Living&search=Chesterfield",
+        },
+        {
+          label: "Mesas Ratonas",
+          href: "/catalogo?categoria=Living&search=Mesa%20Ratona",
+        },
+        {
+          label: "Racks para TV",
+          href: "/catalogo?categoria=Living&search=Rack",
+        },
+      ],
     },
     {
-      nombre: "Comedores",
+      nombre: "Comedor",
       href: "/catalogo?categoria=Comedor",
-      destacados: ["Mesas Extensibles", "Sillas de Paraíso", "Vajilleros de Petiribí", "Bancos"],
+      destacados: [
+        {
+          label: "Mesas de Comedor",
+          href: "/catalogo?categoria=Comedor&search=Mesa",
+        },
+        {
+          label: "Sillas de Diseño",
+          href: "/catalogo?categoria=Comedor&search=Silla",
+        },
+        {
+          label: "Barras Desayunadoras",
+          href: "/catalogo?categoria=Comedor&search=Barra",
+        },
+      ],
     },
     {
       nombre: "Dormitorio",
       href: "/catalogo?categoria=Dormitorio",
-      destacados: ["Respaldos Entelados", "Mesas de Noche", "Cómodas 6 Cajones", "Chifoniers"],
+      destacados: [
+        {
+          label: "Camas King Size",
+          href: "/catalogo?categoria=Dormitorio&search=Cama",
+        },
+        {
+          label: "Mesas de Noche",
+          href: "/catalogo?categoria=Dormitorio&search=Noche",
+        },
+        {
+          label: "Cómodas Escandinavas",
+          href: "/catalogo?categoria=Dormitorio&search=Escandinava",
+        },
+      ],
     },
     {
-      nombre: "HomeOffice",
+      nombre: "Oficina",
       href: "/catalogo?categoria=Oficina",
-      destacados: ["Escritorios Minimalistas", "Bibliotecas Modulares", "Cajoneras"],
+      destacados: [
+        {
+          label: "Escritorios Regulables Pro",
+          href: "/catalogo?categoria=Oficina&search=Elevable",
+        },
+        {
+          label: "Escritorios Minimalistas",
+          href: "/catalogo?categoria=Oficina&search=Minimalista",
+        },
+        {
+          label: "Bibliotecas Modulares",
+          href: "/catalogo?categoria=Oficina&search=Biblioteca",
+        },
+      ],
+    },
+    {
+      nombre: "Exterior",
+      href: "/catalogo?categoria=Exterior",
+      destacados: [
+        {
+          label: "Bancos de Jardín",
+          href: "/catalogo?categoria=Exterior&search=Banco",
+        },
+        {
+          label: "Galería & Patio",
+          href: "/catalogo?categoria=Exterior",
+        },
+      ],
     },
     {
       nombre: "Sucursales",
@@ -182,16 +261,24 @@ export function Navbar() {
                         Colecciones en {cat.nombre}
                       </span>
                       <ul className="space-y-1 text-xs">
-                        {cat.destacados.map((item) => (
-                          <li key={item}>
-                            <Link
-                              href={`${cat.href}&search=${encodeURIComponent(item)}`}
-                              className="block px-3 py-2 rounded-lg text-cocoa dark:text-khaki hover:text-espresso dark:hover:text-linen hover:bg-muted transition-colors"
-                            >
-                              {item}
-                            </Link>
-                          </li>
-                        ))}
+                        {cat.destacados.map((item) => {
+                          const label = typeof item === "string" ? item : item.label;
+                          const href =
+                            typeof item === "string"
+                              ? `${cat.href}&search=${encodeURIComponent(item)}`
+                              : item.href;
+
+                          return (
+                            <li key={label}>
+                              <Link
+                                href={href}
+                                className="block px-3 py-2 rounded-lg text-cocoa dark:text-khaki hover:text-espresso dark:hover:text-linen hover:bg-muted transition-colors"
+                              >
+                                {label}
+                              </Link>
+                            </li>
+                          );
+                        })}
                       </ul>
                       <div className="pt-2 border-t border-border mt-2">
                         <Link
@@ -212,22 +299,47 @@ export function Navbar() {
           {/* Iconos a la Derecha */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Buscador */}
-            <Link
-              href="/catalogo"
-              aria-label="Buscar muebles en el catálogo"
-              className="p-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel shadow-2xs"
-            >
-              <Search className="w-4 h-4 text-cocoa dark:text-khaki" aria-hidden="true" />
-            </Link>
+            {searchOpen ? (
+              <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2 duration-200">
+                <Buscador
+                  className="w-48 sm:w-64 md:w-72"
+                  placeholder="Buscar muebles..."
+                  clearOtherFilters
+                  onSearch={() => setSearchOpen(false)}
+                />
+                <button
+                  onClick={() => setSearchOpen(false)}
+                  type="button"
+                  aria-label="Cerrar buscador"
+                  className="p-2.5 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer shadow-2xs"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSearchOpen(true)}
+                type="button"
+                aria-label="Buscar muebles en el catálogo"
+                className="p-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel shadow-2xs cursor-pointer"
+              >
+                <Search className="w-4 h-4 text-cocoa dark:text-khaki" aria-hidden="true" />
+              </button>
+            )}
 
             {/* Modo Claro / Oscuro */}
             <button
               onClick={toggleTheme}
               type="button"
-              aria-label={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
+              suppressHydrationWarning
+              aria-label={
+                mounted
+                  ? `Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`
+                  : "Cambiar tema"
+              }
               className="p-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel cursor-pointer shadow-2xs"
             >
-              {theme === "dark" ? (
+              {mounted && theme === "dark" ? (
                 <Sun className="w-4 h-4 text-amber-400" aria-hidden="true" />
               ) : (
                 <Moon className="w-4 h-4 text-cocoa" aria-hidden="true" />
@@ -235,7 +347,7 @@ export function Navbar() {
             </button>
 
             {/* Sesion */}
-            {isAuthenticated ? (
+            {isAuth ? (
               <div className="flex items-center gap-2">
                 <Link
                   href="/dashboard"
@@ -294,6 +406,18 @@ export function Navbar() {
           className="lg:hidden fixed inset-0 top-[115px] z-50 bg-background/98 dark:bg-[#18120e]/98 backdrop-blur-lg p-6 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200 flex flex-col justify-between"
         >
           <div className="space-y-5">
+            {/* Buscador Móvil */}
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-camel block mb-2">
+                Buscar en Catálogo
+              </span>
+              <Buscador
+                placeholder="Buscar por nombre, madera o estilo..."
+                clearOtherFilters
+                onSearch={() => setMobileMenuOpen(false)}
+              />
+            </div>
+
             <span className="text-[11px] font-bold uppercase tracking-widest text-camel block">
               Explorar Catálogo
             </span>
@@ -325,7 +449,7 @@ export function Navbar() {
           </div>
 
           <div className="pt-6 border-t border-border space-y-3">
-            {isAuthenticated ? (
+            {isAuth ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
                   <div className="w-10 h-10 rounded-full bg-camel/20 text-cocoa dark:text-camel flex items-center justify-center font-bold text-sm uppercase">
@@ -404,13 +528,13 @@ export function Navbar() {
           <span>Tienda</span>
         </Link>
         <Link
-          href={isAuthenticated ? "/dashboard" : "/login"}
+          href={isAuth ? "/dashboard" : "/login"}
           className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] text-[10px] font-medium transition-colors ${
             pathname === "/dashboard" || pathname === "/login" ? "text-espresso dark:text-camel font-bold" : "text-muted-foreground hover:text-espresso dark:hover:text-linen"
           }`}
         >
           <User className="w-5 h-5 mb-0.5" />
-          <span>{isAuthenticated ? "Mi Cuenta" : "Ingresar"}</span>
+          <span>{isAuth ? "Mi Cuenta" : "Ingresar"}</span>
         </Link>
       </div>
     </header>

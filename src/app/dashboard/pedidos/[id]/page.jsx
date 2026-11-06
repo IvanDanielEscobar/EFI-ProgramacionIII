@@ -5,9 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, Armchair, Store, AlertTriangle } from "lucide-react";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://homedeco-backend.onrender.com/api";
+import { pedidosService } from "@/services/api";
 
 const formatearPrecio = (valor) =>
   new Intl.NumberFormat("es-AR", {
@@ -77,25 +75,13 @@ export default function PedidoDetallePage({ params }) {
 
     async function cargarPedido() {
       try {
-        const response = await fetch(`${API_BASE_URL}/pedidos/${id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        });
-
-        if (response.status === 404) {
+        const data = await pedidosService.getById(id, token);
+        setPedido(normalizarPedido(data));
+      } catch (err) {
+        if (err.status === 404) {
           setNoEncontrado(true);
           return;
         }
-        if (response.status === 401) {
-          throw new Error("Tu sesión expiró. Volvé a iniciar sesión.");
-        }
-        if (!response.ok) {
-          throw new Error("No se pudo obtener el pedido.");
-        }
-
-        const data = await response.json();
-        setPedido(normalizarPedido(data));
-      } catch (err) {
         if (err.name !== "AbortError") {
           setError(err.message || "Error al conectar con el servidor.");
         }

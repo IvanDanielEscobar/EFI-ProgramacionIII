@@ -297,7 +297,7 @@ export default function HomePage() {
             </h2>
           </div>
           <Link
-            href="/catalogo"
+            href="/catalogo/categorias"
             className="inline-flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-cocoa hover:text-espresso dark:text-camel dark:hover:text-khaki transition-colors"
           >
             <span>Ver todas las categorías</span>

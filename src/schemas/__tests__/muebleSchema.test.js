@@ -68,5 +68,22 @@ describe("muebleSchema", () => {
     expect(sinCategoria.success).toBe(false);
     expect(sinMaterial.success).toBe(false);
   });
+
+  it("permite registrar un mueble con URL de imagen opcional o vacía", () => {
+    const conImagen = muebleSchema.safeParse({
+      ...muebleValido,
+      imagen: "https://ejemplo.com/muebles/mesa.jpg",
+    });
+    const sinImagen = muebleSchema.safeParse({
+      ...muebleValido,
+      imagen: "",
+    });
+
+    expect(conImagen.success).toBe(true);
+    expect(sinImagen.success).toBe(true);
+    if (conImagen.success) {
+      expect(conImagen.data.imagen).toBe("https://ejemplo.com/muebles/mesa.jpg");
+    }
+  });
 });
 

@@ -31,7 +31,7 @@ La aplicación frontend fue desarrollada en **Next.js 16 ** y consume la API RES
 
 | Recurso | Enlace |
 |---|---|
-| 🌐 **Aplicación Desplegada (Frontend)** | []() |
+| 🌐 **Aplicación Desplegada (Frontend)** | [efi-programacion-iii.vercel.app](https://efi-programacion-iii.vercel.app) |
 | 📋 **Tablero de Gestión Ágil (Kanban)** | [GitHub Projects - Tablero EFI Home & Deco](https://github.com/users/IvanDanielEscobar/projects/13) |
 | ⚙️ **API REST (Backend)** | [https://homedeco-backend.onrender.com/api](https://homedeco-backend.onrender.com/api) |
 
@@ -50,9 +50,9 @@ La aplicación frontend fue desarrollada en **Next.js 16 ** y consume la API RES
 
 * **Framework:** Next.js 16.4.3
 * **Estilos:** Tailwind CSS v4 
-* **Formularios:** React Hook Form v7
-* **Validación de Esquemas:** Zod v4 + `@hookform/resolvers`
-* **Estado Global:** React Context API (`AuthContext`, `ThemeContext`)
+* **Formularios:** React Hook Form v7 (Login, Registro y Gestión de Muebles)
+* **Validación de Esquemas:** Zod v4 + `@hookform/resolvers` (`loginSchema`, `registerSchema`, `muebleSchema`)
+* **Estado Global:** React Context API (`AuthContext`, `ThemeContext`, `CartContext`, `ToastContext`)
 * **Testing:** Vitest v5 + `@testing-library/react` + JSDOM
 * **Iconos:** Lucide React
 * **Autenticación:** JWT (JSON Web Tokens)
@@ -132,23 +132,23 @@ Para probar la autenticación y las rutas protegidas del panel administrativo:
 
 ### 1. Inicio / Landing Page (Home)
 
-![Home & Deco - Inicio]()
+![Home & Deco - Inicio](docs/screenshots/01-inicio.jpg)
 
 ### 2. Catálogo de Muebles & Decoración
 
-![Catálogo de Muebles]()
+![Catálogo de Muebles](docs/screenshots/02-catalogo.jpg)
 
-### 3. Ficha de Detalle de Producto
-![Detalle de Producto]()
+### 3. Detalle de Producto
+![Detalle de Producto](docs/screenshots/03-detalle-producto.jpg)
 
 ### 4. Showroom & Sucursales
-![Local Showroom Río Cuarto]()
+![Local Showroom Río Cuarto](docs/screenshots/04-sucursales.jpg)
 
 ### 5. Formulario de Login 
-![Pantalla de Login]()
+![Pantalla de Login](docs/screenshots/05-login.png)
 
 ### 6. Dashboard Administrativo 
-![Dashboard Administrativo]()
+![Dashboard Administrativo](docs/screenshots/06-dashboard.png)
 
 ---
 
@@ -166,7 +166,10 @@ El proyecto se gestionó bajo la metodología ágil **Kanban** mediante GitHub P
   - `feature/formulario-muebles`: Formulario de alta/edición de muebles con medidas en cm.
   - `feature/consumo-de-api`: Integración con endpoints y servicios HTTP.
   - `feature/proteccion-rutas`: Middleware de seguridad y control de acceso.
-  - `documentacion/readme`: Documentación técnica y guía de entrega.
+  - `feature/ruta-dinamica`: Rutas dinámicas de detalle (`/catalogo/[id]`) y anidada (`/catalogo/categorias`).
+  - `feature/config-produccion`: Configuración de despliegue en Vercel y cabeceras de seguridad HTTP.
+  - `feature/carrito-y-registro`: Carrito de compras (`CartContext`, `CartDrawer`), notificaciones (`ToastContext`), soporte de imágenes en muebles y formulario de registro.
+  - `documentacion/readme`: Documentación técnica, capturas y guía de entrega.
 
 ---
 

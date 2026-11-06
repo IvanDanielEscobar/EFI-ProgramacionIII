@@ -131,9 +131,33 @@ export async function apiFetch(endpoint, options = {}) {
   const data = isJson ? await response.json().catch(() => null) : await response.text().catch(() => null);
 
   if (!response.ok) {
-    const errorMsg =
-      (data && (data.detail || data.non_field_errors?.[0] || data.mensaje || (typeof data === "object" ? JSON.stringify(data) : null))) ||
-      `Error HTTP ${response.status}: ${response.statusText}`;
+    let errorMsg = null;
+    if (data && typeof data === "object") {
+      if (typeof data.detail === "string") {
+        errorMsg = data.detail;
+      } else if (Array.isArray(data.non_field_errors) && data.non_field_errors.length > 0) {
+        errorMsg = data.non_field_errors.join(", ");
+      } else if (typeof data.mensaje === "string") {
+        errorMsg = data.mensaje;
+      } else {
+        const fieldErrors = Object.entries(data)
+          .filter(([_, val]) => val !== null && val !== undefined)
+          .map(([field, msgs]) => {
+            const msgStr = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+            return `${field}: ${msgStr}`;
+          })
+          .join(" | ");
+        if (fieldErrors) errorMsg = fieldErrors;
+      }
+    }
+
+    if (!errorMsg) {
+      errorMsg =
+        response.status === 404
+          ? `Error intente nuevamente mas tarde.`
+          : `Error HTTP ${response.status}: ${response.statusText}`;
+    }
+
     const error = new Error(errorMsg);
     error.status = response.status;
     error.data = data;
@@ -254,7 +278,7 @@ export const mueblesService = {
         descripcion,
         categoria: Number(categoria),
         material: Number(material),
-        imagen,
+        imagen: imagen ? imagen : null,
       }),
     });
 
@@ -293,7 +317,7 @@ export const mueblesService = {
     if (descripcion !== undefined) mueblePayload.descripcion = descripcion;
     if (categoria !== undefined) mueblePayload.categoria = Number(categoria);
     if (material !== undefined) mueblePayload.material = Number(material);
-    if (imagen !== undefined) mueblePayload.imagen = imagen;
+    if (imagen !== undefined) mueblePayload.imagen = imagen ? imagen : null;
 
     const muebleActualizado = await apiFetch(`/muebles/${id}/`, {
       method: "PATCH",
@@ -362,6 +386,11 @@ export const authService = {
     apiFetch("/token/refresh/", {
       method: "POST",
       body: JSON.stringify({ refresh }),
+    }),
+  register: (userData) =>
+    apiFetch("/register/", {
+      method: "POST",
+      body: JSON.stringify(userData),
     }),
 };
 

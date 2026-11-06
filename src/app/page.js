@@ -224,11 +224,11 @@ export default function HomePage() {
         aria-label="Recomendaciones destacadas"
         className="relative w-full overflow-hidden bg-espresso text-linen"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 min-h-[580px] lg:min-h-[660px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 h-auto md:min-h-[540px] lg:min-h-[600px] xl:min-h-[660px]">
           {heroRecomendados.map((item, idx) => (
             <div
               key={item.id}
-              className={`relative group overflow-hidden flex flex-col justify-end p-8 sm:p-12 lg:p-16 border-b md:border-b-0 ${
+              className={`relative group overflow-hidden flex flex-col justify-end p-8 sm:p-12 lg:p-16 min-h-[420px] sm:min-h-[480px] md:min-h-full border-b md:border-b-0 ${
                 idx === 0 ? "md:border-r border-[#3b2b22] dark:border-border/60" : ""
               }`}
             >
@@ -246,17 +246,17 @@ export default function HomePage() {
               </div>
 
               {/* Contenido Flotante */}
-              <div className="relative z-10 space-y-3 max-w-lg">
-                <span className="inline-block text-[11px] font-bold tracking-[0.25em] uppercase text-camel">
+              <div className="relative z-10 space-y-3 sm:space-y-4 max-w-lg">
+                <span className="inline-block text-[10px] sm:text-[11px] font-bold tracking-[0.25em] uppercase text-camel">
                   {item.etiqueta}
                 </span>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-linen leading-tight font-sans">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-linen leading-tight font-sans break-words">
                   {item.titulo}
                 </h2>
-                <p className="text-sm sm:text-base text-khaki/90 line-clamp-2 font-normal leading-relaxed">
+                <p className="text-xs sm:text-sm md:text-base text-khaki/90 line-clamp-2 font-normal leading-relaxed">
                   {item.subtitulo}
                 </p>
-                <div className="pt-2">
+                <div className="pt-2 sm:pt-3">
                   <Link
                     href={item.href}
                     className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-wider uppercase text-linen border-b-2 border-camel/80 pb-1 hover:border-camel hover:text-camel transition-all group-hover:translate-x-1"
@@ -269,23 +269,23 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-
-        {/* Boton Central */}
-        <div className="absolute left-1/2 bottom-2 -translate-x-1/2 z-20 hidden md:block">
-          <Link
-            href="/catalogo"
-            className="px-6 py-2.5 rounded-full bg-linen/95 hover:bg-linen text-espresso text-xs font-bold tracking-widest uppercase backdrop-blur-md border border-khaki/60 shadow-2xl transition-all hover:scale-105 inline-flex items-center gap-2"
-          >
-            <span>CATALOGO COMPLETO</span>
-            <span>&gt;</span>
-          </Link>
-        </div>
       </section>
+
+      {/*  Boton de Catalogo */}
+      <div className="w-full py-10 sm:py-14 bg-background border-b border-border/60 flex items-center justify-center px-4">
+        <Link
+          href="/catalogo"
+          className="px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-espresso text-linen hover:bg-cocoa dark:bg-camel dark:text-espresso dark:hover:bg-khaki text-xs sm:text-sm font-bold tracking-widest uppercase shadow-md hover:shadow-xl transition-all hover:scale-105 inline-flex items-center gap-2.5 cursor-pointer"
+        >
+          <span>CATÁLOGO COMPLETO</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
 
       {/* CATEGORIAS */}
       <section
         aria-label="Categorías por ambiente"
-        className="w-full py-16 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
+        className="w-full py-14 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
       >
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-14 gap-4">
           <div className="space-y-1">
@@ -410,10 +410,10 @@ export default function HomePage() {
               masVendidos.map((prod) => (
                 <div
                   key={prod.id}
-                  className="w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] shrink-0 snap-start group flex flex-col"
+                  className="w-[280px] sm:w-[320px] lg:w-[calc(25%-18px)] shrink-0 snap-start group flex flex-col h-full bg-card p-3.5 sm:p-4 rounded-2xl border border-border/70 hover:border-khaki/80 shadow-2xs hover:shadow-lg transition-all duration-300"
                 >
                   {/* Imagen */}
-                  <div className="relative aspect-4/3 w-full bg-linen/85 dark:bg-[#201813] rounded-xl overflow-hidden p-4 flex items-center justify-center transition-all group-hover:bg-khaki/40 dark:group-hover:bg-[#281e18]">
+                  <div className="relative aspect-4/3 w-full bg-linen/85 dark:bg-[#201813] rounded-xl overflow-hidden p-3 flex items-center justify-center transition-all group-hover:bg-khaki/40 dark:group-hover:bg-[#281e18]">
                     <div className="relative w-full h-full">
                       <Image
                         src={prod.imagen}
@@ -426,46 +426,51 @@ export default function HomePage() {
                   </div>
 
                   {/* Info del Producto */}
-                  <div className="pt-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-bold text-base text-espresso dark:text-linen group-hover:text-cocoa dark:group-hover:text-camel transition-colors leading-snug">
-                          {prod.nombre}
-                        </h3>
-                        <span className="text-xs text-cocoa/80 dark:text-khaki block mt-0.5">
+                  <div className="pt-3.5 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <span className="text-[11px] font-semibold text-cocoa/80 dark:text-camel tracking-wider uppercase">
                           {prod.categoria}
                         </span>
+
+                        {/* Muestras de Color */}
+                        <div
+                          aria-label="Opciones de acabado disponibles"
+                          className="flex items-center gap-1.5 shrink-0 pt-0.5"
+                        >
+                          {prod.colores.map((color, idx) => (
+                            <span
+                              key={idx}
+                              style={{ backgroundColor: color }}
+                              className="w-3.5 h-3.5 rounded-full border border-black/15 dark:border-white/20 shadow-2xs inline-block"
+                              title={`Variante de color ${idx + 1}`}
+                            />
+                          ))}
+                        </div>
                       </div>
 
-                      {/* Muestras de Color */}
-                      <div
-                        aria-label="Opciones de acabado disponibles"
-                        className="flex items-center gap-1.5 shrink-0 pt-1"
-                      >
-                        {prod.colores.map((color, idx) => (
-                          <span
-                            key={idx}
-                            style={{ backgroundColor: color }}
-                            className="w-3.5 h-3.5 rounded-full border border-black/15 dark:border-white/20 shadow-2xs inline-block"
-                            title={`Variante de color ${idx + 1}`}
-                          />
-                        ))}
-                      </div>
+                      <Link href={prod.href} className="group/link block">
+                        <h3 className="font-bold text-base text-espresso dark:text-linen group-hover/link:text-cocoa dark:group-hover/link:text-camel transition-colors line-clamp-2 min-h-[2.75rem] leading-snug">
+                          {prod.nombre}
+                        </h3>
+                      </Link>
                     </div>
 
-                    <div className="pt-1">
+                    {/* Precio y Cuotas */}
+                    <div className="pt-2 min-h-[3rem] flex flex-col justify-end">
                       <div className="font-extrabold text-lg text-espresso dark:text-linen tracking-tight">
                         {prod.precio}
                       </div>
-                      <div className="text-[11px] text-cocoa/90 dark:text-khaki font-medium">
+                      <div className="text-[11px] text-cocoa/90 dark:text-khaki font-medium line-clamp-1">
                         {prod.cuotas}
                       </div>
                     </div>
 
-                    <div className="pt-2">
+                    {/* Acciones */}
+                    <div className="pt-2 mt-auto">
                       <Link
                         href={prod.href}
-                        className="w-full inline-flex items-center justify-center py-2.5 rounded-lg border border-khaki hover:border-espresso hover:bg-espresso hover:text-linen dark:border-border dark:hover:border-camel dark:hover:bg-camel dark:hover:text-espresso bg-card text-espresso dark:text-linen text-xs font-semibold transition-all min-h-[44px]"
+                        className="w-full inline-flex items-center justify-center py-2.5 rounded-xl border border-khaki hover:border-espresso hover:bg-espresso hover:text-linen dark:border-border dark:hover:border-camel dark:hover:bg-camel dark:hover:text-espresso bg-card text-espresso dark:text-linen text-xs font-semibold transition-all min-h-[40px]"
                       >
                         Ver Detalle
                       </Link>

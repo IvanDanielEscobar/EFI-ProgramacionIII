@@ -13,6 +13,7 @@ import {
 import { mueblesService } from "@/services/api";
 import { Badge } from "@/components/Badge";
 import { Alert } from "@/components/Alert";
+import { DetalleAcciones } from "./DetalleAcciones";
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
@@ -274,36 +275,7 @@ export default async function DetalleProductoPage({ params }) {
             </div>
 
             {/* Botones de Acción */}
-            <div className="pt-4 space-y-3">
-              <a
-                href={`https://wa.me/5491166681012?text=${encodeURIComponent(
-                  `Hola Home & Deco! Quiero consultar por el mueble: ${producto.nombre} (ID: ${producto.id})`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-bold text-sm uppercase tracking-wider transition-all shadow-md min-h-[48px]"
-              >
-                <MessageCircle className="w-5 h-5 text-emerald-400 dark:text-emerald-900" />
-                <span>Consultar por WhatsApp</span>
-              </a>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-linen dark:bg-muted border border-border hover:bg-espresso hover:text-linen dark:hover:bg-camel dark:hover:text-espresso text-xs font-bold text-foreground uppercase tracking-wider transition-colors min-h-[44px] cursor-pointer"
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Agregar al Carrito</span>
-                </button>
-
-                <Link
-                  href="/catalogo"
-                  className="inline-flex items-center justify-center py-3 px-4 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-colors min-h-[44px]"
-                >
-                  Seguir Explorando
-                </Link>
-              </div>
-            </div>
+            <DetalleAcciones producto={producto} />
           </div>
         </div>
       </div>

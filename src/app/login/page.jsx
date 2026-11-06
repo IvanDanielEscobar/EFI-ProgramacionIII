@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "@/schemas/loginSchema";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import {
   LogIn,
   Lock,
@@ -28,9 +29,19 @@ function LoginFormContent() {
   const errorParam = searchParams.get("error");
 
   const { login, isAuthenticated, user } = useAuth();
+  const toast = useToast();
 
+  const [mounted, setMounted] = useState(false);
   const [apiError, setApiError] = useState("");
   const [mostrarPassword, setMostrarPassword] = useState(false);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setMounted(true);
+    });
+  }, []);
+
+  const isAuth = mounted && isAuthenticated;
 
   const {
     register,
@@ -47,14 +58,14 @@ function LoginFormContent() {
 
   // Si ya está autenticado, redirigir automáticamente según su rol
   useEffect(() => {
-    if (isAuthenticated) {
+    if (mounted && isAuthenticated) {
       const destino = user?.es_empleado ? redirectTarget : "/";
       const timeout = setTimeout(() => {
         router.push(destino);
       }, 1200);
       return () => clearTimeout(timeout);
     }
-  }, [isAuthenticated, user, redirectTarget, router]);
+  }, [mounted, isAuthenticated, user, redirectTarget, router]);
 
   const onSubmit = async (data) => {
     setApiError("");
@@ -63,6 +74,9 @@ function LoginFormContent() {
       const result = await login(data.username, data.password);
 
       if (result?.success) {
+        toast.success(
+          `¡Bienvenido/a, ${result.user?.username || data.username}! Inicio de sesión exitoso.`
+        );
         if (result.user?.es_empleado) {
           router.push(redirectTarget);
         } else {
@@ -88,13 +102,20 @@ function LoginFormContent() {
           href="/"
           className="inline-flex items-center gap-2 group p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel rounded-xl"
         >
-          <div className="relative h-12 w-12 overflow-hidden rounded-2xl bg-linen dark:bg-card p-1 border border-khaki/60 dark:border-border transition-transform group-hover:scale-105 shadow-2xs">
+          <div className="relative h-12 w-12 shrink-0 transition-transform group-hover:scale-105">
             <Image
-              src="/logo-icon.jpg"
+              src="/logo-icon-transparent.png"
               alt="Home & Deco"
               fill
               sizes="48px"
-              className="object-contain"
+              className="object-contain dark:hidden"
+            />
+            <Image
+              src="/logo-icon-light-stroke.png"
+              alt="Home & Deco"
+              fill
+              sizes="48px"
+              className="object-contain hidden dark:block"
             />
           </div>
         </Link>
@@ -122,7 +143,7 @@ function LoginFormContent() {
 
       {/* Tarjeta del Formulario */}
       <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-md space-y-6">
-        {isAuthenticated ? (
+        {isAuth ? (
           <div className="text-center py-6 space-y-3">
             <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-6 h-6" />
@@ -146,7 +167,7 @@ function LoginFormContent() {
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-            {/* Alerta de Error de la API */}
+            {/* Alerta de Error */}
             {apiError && (
               <div
                 role="alert"
@@ -173,7 +194,7 @@ function LoginFormContent() {
                   id="username"
                   type="text"
                   autoComplete="username"
-                  placeholder="Ej: admin o vendedor1"
+                  placeholder="Ej: LionelMessi"
                   aria-invalid={errors.username ? "true" : "false"}
                   {...register("username")}
                   className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-linen/40 dark:bg-muted/40 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-all min-h-[44px] ${
@@ -255,20 +276,15 @@ function LoginFormContent() {
               )}
             </button>
 
-            {/* Usuarios de prueba backend DRF */}
-            <div className="p-3.5 rounded-2xl bg-linen/60 dark:bg-muted/30 border border-border text-[11px] text-muted-foreground space-y-1.5">
-              <p className="font-semibold text-espresso dark:text-linen flex items-center gap-1">
-                <span>Usuarios de prueba del Backend:</span>
-              </p>
-              <p>
-                • <strong>Admin (Superadmin):</strong> <code className="text-camel font-bold">admin</code> / <code className="text-camel">admin123</code>
-              </p>
-              <p>
-                • <strong>Empleado (Ventas):</strong> <code className="text-camel font-bold">vendedor1</code> / <code className="text-camel">vendedor123</code>
-              </p>
-              <p>
-                • <strong>Cliente (Sin acceso dashboard):</strong> <code className="text-camel font-bold">cliente_juan</code> / <code className="text-camel">cliente123</code>
-              </p>
+            {/* Acceso a Registro */}
+            <div className="pt-2 text-center text-xs text-muted-foreground border-t border-border">
+              <span>¿No tenés una cuenta todavía? </span>
+              <Link
+                href="/register"
+                className="font-bold text-espresso dark:text-camel hover:underline"
+              >
+                Registrate acá
+              </Link>
             </div>
           </form>
         )}

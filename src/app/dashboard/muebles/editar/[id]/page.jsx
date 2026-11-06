@@ -3,13 +3,16 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Sparkles, CheckCircle2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, Save, Sparkles, AlertCircle } from "lucide-react";
 import {
   mueblesService,
   categoriasService,
   materialesService,
 } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { muebleSchema } from "@/schemas/muebleSchema";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
@@ -22,36 +25,44 @@ export default function EditarMueblePage({ params }) {
   const router = useRouter();
   const { token, isAuthenticated } = useAuth();
 
-  // Estados del formulario
-  const [formData, setFormData] = useState({
-    nombre: "",
-    categoria: "",
-    material: "",
-    precio: "",
-    stock: "",
-    color: "",
-    alto: "80",
-    ancho: "120",
-    profundidad: "60",
-    peso: "15",
-    descripcion: "",
-    caracteristica_id: null,
-  });
-
   const [categorias, setCategorias] = useState([]);
   const [materiales, setMateriales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [apiError, setApiError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
+  const [caracteristicaId, setCaracteristicaId] = useState(null);
 
-  // Carga de datos desde la API
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(muebleSchema),
+    defaultValues: {
+      nombre: "",
+      categoria: "",
+      material: "",
+      precio: "",
+      stock: "1",
+      color: "Madera Natural",
+      alto: "80",
+      ancho: "120",
+      profundidad: "60",
+      peso: "15",
+      descripcion: "",
+    },
+    mode: "onTouched",
+  });
+
+  // Cargar categorías, materiales y datos iniciales del mueble (si es edición)
   useEffect(() => {
     let mounted = true;
 
     async function cargarDatos() {
       setIsLoading(true);
-      setError(null);
+      setApiError(null);
+
       try {
         const [catsData, matsData] = await Promise.all([
           categoriasService.getAll().catch(() => []),
@@ -66,31 +77,44 @@ export default function EditarMueblePage({ params }) {
           const mueble = await mueblesService.getById(id);
           if (!mounted) return;
 
-          setFormData({
+          setCaracteristicaId(mueble.caracteristica_id);
+
+          reset({
             nombre: mueble.nombre || "",
-            categoria: String(mueble.categoria_id || catsData[0]?.id || "1"),
-            material: String(mueble.material_id || matsData[0]?.id || "1"),
-            precio: String(mueble.precio || ""),
+            categoria: String(mueble.categoria_id || catsData[0]?.id || ""),
+            material: String(mueble.material_id || matsData[0]?.id || ""),
+            precio: String(mueble.precio ?? ""),
             stock: String(mueble.stock ?? "0"),
-            color: mueble.color || "",
-            alto: String(mueble.alto || "80"),
-            ancho: String(mueble.ancho || "120"),
-            profundidad: String(mueble.profundidad || "60"),
-            peso: String(mueble.peso || "15"),
+            color: mueble.color || "Madera Natural",
+            alto: String(mueble.alto ?? "80"),
+            ancho: String(mueble.ancho ?? "120"),
+            profundidad: String(mueble.profundidad ?? "60"),
+            peso: String(mueble.peso ?? "15"),
             descripcion: mueble.descripcion || "",
-            caracteristica_id: mueble.caracteristica_id,
           });
         } else {
-          // Pre-seleccionar la primera categoría y material disponibles
-          setFormData((prev) => ({
-            ...prev,
-            categoria: catsData[0]?.id ? String(catsData[0].id) : "1",
-            material: matsData[0]?.id ? String(matsData[0].id) : "1",
-          }));
+          // Pre-seleccionar primera categoría y material disponibles en alta
+          if (catsData.length > 0 && matsData.length > 0) {
+            reset({
+              nombre: "",
+              categoria: String(catsData[0].id),
+              material: String(matsData[0].id),
+              precio: "",
+              stock: "1",
+              color: "Madera Natural",
+              alto: "80",
+              ancho: "120",
+              profundidad: "60",
+              peso: "15",
+              descripcion: "",
+            });
+          }
         }
       } catch (err) {
         if (mounted) {
-          setError(err.message || "Error al conectar con la API de Home & Deco.");
+          setApiError(
+            err.message || "Error al conectar con la API de Home & Deco."
+          );
         }
       } finally {
         if (mounted) setIsLoading(false);
@@ -102,61 +126,35 @@ export default function EditarMueblePage({ params }) {
     return () => {
       mounted = false;
     };
-  }, [id, esNuevo]);
+  }, [id, esNuevo, reset]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const onSubmit = async (data) => {
+    setApiError(null);
+    setSuccessMsg(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    // Validaciones de campos obligatorios
-    if (!formData.nombre.trim()) {
-      setError("El nombre de la pieza es obligatorio.");
-      setIsSaving(false);
-      return;
-    }
-    if (!formData.categoria) {
-      setError("Debe seleccionar un ambiente o categoría.");
-      setIsSaving(false);
-      return;
-    }
-    if (!formData.material) {
-      setError("Debe seleccionar un material principal.");
-      setIsSaving(false);
-      return;
-    }
-    if (!formData.precio || Number(formData.precio) <= 0) {
-      setError("El precio debe ser un número positivo.");
-      setIsSaving(false);
-      return;
-    }
+    const payload = {
+      ...data,
+      caracteristica_id: caracteristicaId,
+    };
 
     try {
       if (esNuevo) {
-        await mueblesService.create(formData, token);
-        setSuccess("¡Mueble creado con éxito en la API!");
+        await mueblesService.create(payload, token);
+        setSuccessMsg("¡Mueble creado con éxito en la API!");
       } else {
-        await mueblesService.update(id, formData, token);
-        setSuccess("¡Datos actualizados con éxito en la API!");
+        await mueblesService.update(id, payload, token);
+        setSuccessMsg("¡Mueble actualizado con éxito en la API!");
       }
 
-      // Redirigir al listado tras 1.2 segundos
+      // Redirección al inventario tras confirmación
       setTimeout(() => {
         router.push("/dashboard/muebles");
       }, 1200);
     } catch (err) {
-      setError(
+      setApiError(
         err.message ||
-          "Error al guardar los cambios. Verifique que cuenta con token de autenticación válido."
+          "Error al guardar los cambios en la API. Verificá que contás con permisos y token válido."
       );
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -201,11 +199,8 @@ export default function EditarMueblePage({ params }) {
             {esNuevo ? "Alta de Producto" : `Edición Mueble #${id}`}
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-espresso dark:text-linen tracking-tight">
-            {esNuevo ? "Crear Nueva Pieza" : formData.nombre}
+            {esNuevo ? "Crear Nueva Pieza" : "Editar Ficha de Mueble"}
           </h1>
-          <p className="text-xs sm:text-sm text-cocoa/80 dark:text-khaki mt-1">
-            Los datos se sincronizan directamente con el backend Django REST Framework.
-          </p>
         </div>
 
         {!esNuevo && (
@@ -219,13 +214,10 @@ export default function EditarMueblePage({ params }) {
         )}
       </div>
 
-      {/* Mensaje de Autenticación*/}
+      {/* Alerta si no hay sesión iniciada */}
       {!isAuthenticated && (
-        <Alert
-          variant="warning"
-          title="Autenticación requerida"
-        >
-          No tenés una sesión iniciada, Inicia Sesion en{" "}
+        <Alert variant="warning" title="Autenticación requerida">
+          No tenés una sesión iniciada. Para guardar cambios en la API necesitás autenticarte en{" "}
           <Link href="/login" className="underline font-bold">
             /login
           </Link>
@@ -233,52 +225,49 @@ export default function EditarMueblePage({ params }) {
         </Alert>
       )}
 
-      {/* Alertas de Éxito o Error */}
-      {success && (
+      {/* Mensajes de Éxito o Error de la API */}
+      {successMsg && (
         <Alert variant="success" title="Operación completada">
-          {success} Redirigiendo al inventario...
+          {successMsg} Redirigiendo al inventario...
         </Alert>
       )}
 
-      {error && (
-        <Alert variant="danger" title="Error al guardar">
-          {error}
+      {apiError && (
+        <Alert variant="danger" title="Error al guardar en el servidor">
+          {apiError}
         </Alert>
       )}
 
-      {/* Formulario */}
+      {/* Formulario Controlado con React Hook Form + Zod */}
       <div className="p-6 sm:p-8 rounded-3xl bg-card border border-border shadow-xs">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
           {/* Nombre de la Pieza */}
           <Input
             label="Nombre de la Pieza"
-            name="nombre"
             required
-            value={formData.nombre}
-            onChange={handleChange}
             placeholder="Ej: Sofá Rinconero Olala XXL"
+            error={errors.nombre?.message}
+            {...register("nombre")}
           />
 
-          {/* Grid de Ambiente y Material */}
+          {/* Grid de Ambiente / Categoría y Material Principal */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Ambiente / Categoría"
-              name="categoria"
               required
               options={opcionesCategoria}
-              value={formData.categoria}
-              onChange={handleChange}
               placeholder="Seleccionar categoría..."
+              error={errors.categoria?.message}
+              {...register("categoria")}
             />
 
             <Select
-              label="Material Principal"
-              name="material"
+              label="Material"
               required
               options={opcionesMaterial}
-              value={formData.material}
-              onChange={handleChange}
               placeholder="Seleccionar material..."
+              error={errors.material?.message}
+              {...register("material")}
             />
           </div>
 
@@ -287,66 +276,69 @@ export default function EditarMueblePage({ params }) {
             <Input
               label="Precio Contado ($)"
               type="number"
-              name="precio"
+              step="any"
               required
-              value={formData.precio}
-              onChange={handleChange}
               placeholder="Ej: 385000"
+              error={errors.precio?.message}
+              {...register("precio")}
             />
 
             <Input
               label="Stock Disponible"
               type="number"
-              name="stock"
               required
-              value={formData.stock}
-              onChange={handleChange}
               placeholder="Ej: 10"
+              error={errors.stock?.message}
+              {...register("stock")}
             />
 
             <Input
               label="Tono / Color"
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
               placeholder="Ej: Lino Arena Natural"
+              error={errors.color?.message}
+              {...register("color")}
             />
           </div>
 
-          {/* Grid de Dimensiones */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Input
-              label="Alto (cm)"
-              type="number"
-              name="alto"
-              value={formData.alto}
-              onChange={handleChange}
-              placeholder="Ej: 85"
-            />
-            <Input
-              label="Ancho (cm)"
-              type="number"
-              name="ancho"
-              value={formData.ancho}
-              onChange={handleChange}
-              placeholder="Ej: 210"
-            />
-            <Input
-              label="Profundidad (cm)"
-              type="number"
-              name="profundidad"
-              value={formData.profundidad}
-              onChange={handleChange}
-              placeholder="Ej: 95"
-            />
-            <Input
-              label="Peso estimado (kg)"
-              type="number"
-              name="peso"
-              value={formData.peso}
-              onChange={handleChange}
-              placeholder="Ej: 45"
-            />
+          {/* Grid de Medidas en cm (Números Positivos) */}
+          <div className="space-y-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <Input
+                label="Alto (cm)"
+                type="number"
+                step="any"
+                required
+                placeholder="Ej: 85"
+                error={errors.alto?.message}
+                {...register("alto")}
+              />
+              <Input
+                label="Ancho (cm)"
+                type="number"
+                step="any"
+                required
+                placeholder="Ej: 210"
+                error={errors.ancho?.message}
+                {...register("ancho")}
+              />
+              <Input
+                label="Profundidad (cm)"
+                type="number"
+                step="any"
+                required
+                placeholder="Ej: 95"
+                error={errors.profundidad?.message}
+                {...register("profundidad")}
+              />
+              <Input
+                label="Peso estimado (kg)"
+                type="number"
+                step="any"
+                placeholder="Ej: 45"
+                error={errors.peso?.message}
+                {...register("peso")}
+              />
+            </div>
           </div>
 
           {/* Descripción */}
@@ -355,13 +347,21 @@ export default function EditarMueblePage({ params }) {
               Descripción y Cualidades
             </label>
             <textarea
-              name="descripcion"
               rows={4}
-              value={formData.descripcion}
-              onChange={handleChange}
               placeholder="Detallá las cualidades de diseño, confort, tapicería y acabado artesanal..."
-              className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-camel/30 focus:border-camel transition-all"
+              className={`w-full px-4 py-2.5 rounded-xl border bg-card text-sm text-foreground focus:outline-none focus:ring-2 transition-all ${
+                errors.descripcion
+                  ? "border-red-500 focus:ring-red-400/40"
+                  : "border-border focus:ring-camel/30 focus:border-camel"
+              }`}
+              {...register("descripcion")}
             />
+            {errors.descripcion && (
+              <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-medium">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{errors.descripcion.message}</span>
+              </p>
+            )}
           </div>
 
           {/* Botones de Acción */}
@@ -376,7 +376,7 @@ export default function EditarMueblePage({ params }) {
             <Button
               type="submit"
               variant="espresso"
-              isLoading={isSaving}
+              isLoading={isSubmitting}
               leftIcon={Save}
             >
               {esNuevo ? "Crear Mueble" : "Guardar Cambios"}

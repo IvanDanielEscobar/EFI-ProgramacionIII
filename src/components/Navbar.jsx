@@ -56,8 +56,8 @@ export function Navbar() {
   // Detección de scroll: fijar en desktop y ocultar/reaparecer en móviles
   useEffect(() => {
     const handleScroll = () => {
-      // En desktop (>= 1024px), el navbar permanece siempre fijo y visible
-      if (window.innerWidth >= 1024) {
+      // En desktop y tablet (>= 768px), el navbar permanece siempre fijo y visible
+      if (window.innerWidth >= 768) {
         setIsMobileVisible(true);
         return;
       }
@@ -221,13 +221,14 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full">
-      {/* transición para móviles */}
-      <div
-        className={`w-full transition-transform duration-300 ease-in-out ${
-          isMobileVisible ? "translate-y-0" : "-translate-y-full lg:translate-y-0"
-        }`}
-      >
+    <>
+      <header className="fixed top-0 left-0 right-0 z-40 w-full shadow-xs">
+        {/* transición para móviles */}
+        <div
+          className={`w-full transition-transform duration-300 ease-in-out ${
+            isMobileVisible ? "translate-y-0" : "-translate-y-full md:translate-y-0"
+          }`}
+        >
         {/* Barra de Anuncio Arriba de la navbar principal */}
         <div
           aria-label="Venta telefónica y WhatsApp"
@@ -603,6 +604,9 @@ export function Navbar() {
         </Link>
       </div>
     </header>
+    {/* Espaciador para evitar solapamiento del contenido con el navbar fijo */}
+    <div className="h-[92px] sm:h-[112px] w-full shrink-0" aria-hidden="true" />
+  </>
   );
 }
 

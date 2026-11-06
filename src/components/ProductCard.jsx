@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, Eye } from "lucide-react";
+import { ShoppingBag, Eye, Check } from "lucide-react";
 import { Badge } from "@/components/Badge";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
 
 export function ProductCard({
   mueble,
@@ -15,6 +17,9 @@ export function ProductCard({
 }) {
   const initialColor = mueble?.colores?.[0] || "#B2967D";
   const [activeColor, setActiveColor] = useState(initialColor);
+  const [agregadoReciente, setAgregadoReciente] = useState(false);
+  const { addToCart } = useCart();
+  const toast = useToast();
 
   if (!mueble) return null;
 
@@ -53,7 +58,7 @@ export function ProductCard({
 
   return (
     <article
-      className={`group flex flex-col rounded-2xl bg-card border border-border/70 hover:border-khaki/80 shadow-2xs hover:shadow-lg transition-all duration-300 p-3.5 sm:p-4 ${className}`}
+      className={`group flex flex-col h-full rounded-2xl bg-card border border-border/70 hover:border-khaki/80 shadow-2xs hover:shadow-lg transition-all duration-300 p-3.5 sm:p-4 ${className}`}
     >
       {/* Contenedor  */}
       <div className="relative aspect-4/3 w-full bg-linen/85 dark:bg-[#201813] rounded-xl overflow-hidden p-3 flex items-center justify-center transition-colors group-hover:bg-khaki/30 dark:group-hover:bg-[#281e18]">
@@ -124,14 +129,14 @@ export function ProductCard({
           </div>
 
           <Link href={`/catalogo/${id}`} className="group/link block">
-            <h3 className="font-bold text-base text-espresso dark:text-linen group-hover/link:text-cocoa dark:group-hover/link:text-camel transition-colors line-clamp-1 leading-snug">
+            <h3 className="font-bold text-base text-espresso dark:text-linen group-hover/link:text-cocoa dark:group-hover/link:text-camel transition-colors line-clamp-2 min-h-[2.75rem] leading-snug">
               {nombre}
             </h3>
           </Link>
         </div>
 
         {/* Precio y Cuotas */}
-        <div>
+        <div className="pt-2 min-h-[3rem] flex flex-col justify-end">
           <div className="font-extrabold text-lg text-espresso dark:text-linen tracking-tight">
             {precioFormateado}
           </div>
@@ -141,7 +146,7 @@ export function ProductCard({
         </div>
 
         {/* Acciones */}
-        <div className="pt-1 flex items-center gap-2">
+        <div className="pt-2 flex items-center gap-2 mt-auto">
           <Link
             href={`/catalogo/${id}`}
             className="flex-1 py-2 px-3 rounded-xl border border-khaki hover:border-espresso text-espresso dark:border-border dark:hover:border-camel dark:text-linen text-xs font-semibold text-center hover:bg-linen/50 dark:hover:bg-muted transition-colors min-h-[40px] flex items-center justify-center"
@@ -149,16 +154,34 @@ export function ProductCard({
             Ver Detalle
           </Link>
 
-          {onAddToCart && (
-            <button
-              type="button"
-              onClick={() => onAddToCart(mueble, activeColor)}
-              aria-label={`Agregar ${nombre} al carrito`}
-              className="p-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso shadow-2xs transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer active:scale-95"
-            >
+          <button
+            type="button"
+            disabled={stock === 0}
+            onClick={() => {
+              if (stock === 0) return;
+              if (onAddToCart) {
+                onAddToCart(mueble, activeColor);
+              } else {
+                addToCart(mueble, 1, activeColor);
+                toast.success(`"${nombre}" se agregó al carrito de compras.`);
+              }
+              setAgregadoReciente(true);
+              setTimeout(() => setAgregadoReciente(false), 1500);
+            }}
+            title={stock === 0 ? "Sin stock disponible" : `Agregar ${nombre} al carrito`}
+            aria-label={`Agregar ${nombre} al carrito`}
+            className={`p-2.5 rounded-xl shadow-2xs transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+              agregadoReciente
+                ? "bg-emerald-600 text-white"
+                : "bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso"
+            }`}
+          >
+            {agregadoReciente ? (
+              <Check className="w-4 h-4" />
+            ) : (
               <ShoppingBag className="w-4 h-4" />
-            </button>
-          )}
+            )}
+          </button>
         </div>
       </div>
     </article>

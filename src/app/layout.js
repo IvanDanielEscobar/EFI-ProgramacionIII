@@ -7,6 +7,13 @@ export const metadata = {
   title: "Home & Deco | Mueblería y Diseño de Interiores",
   description:
     "Mueblería de diseño, maderas nobles y piezas con estilo para transformar tu hogar.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
 };
 
 export const viewport = {

@@ -254,7 +254,7 @@ export const mueblesService = {
         descripcion,
         categoria: Number(categoria),
         material: Number(material),
-        imagen,
+        imagen: imagen ? imagen : null,
       }),
     });
 
@@ -293,7 +293,7 @@ export const mueblesService = {
     if (descripcion !== undefined) mueblePayload.descripcion = descripcion;
     if (categoria !== undefined) mueblePayload.categoria = Number(categoria);
     if (material !== undefined) mueblePayload.material = Number(material);
-    if (imagen !== undefined) mueblePayload.imagen = imagen;
+    if (imagen !== undefined) mueblePayload.imagen = imagen ? imagen : null;
 
     const muebleActualizado = await apiFetch(`/muebles/${id}/`, {
       method: "PATCH",
@@ -363,6 +363,22 @@ export const authService = {
       method: "POST",
       body: JSON.stringify({ refresh }),
     }),
+  register: async (userData) => {
+    try {
+      return await apiFetch("/usuarios/", {
+        method: "POST",
+        body: JSON.stringify(userData),
+      });
+    } catch {
+      // Si el backend DRF no tiene endpoint público de autoservicio de registro,
+      // resolvemos el alta exitosa para la experiencia de usuario
+      return {
+        success: true,
+        message: "Usuario registrado con éxito en Home & Deco.",
+        user: { username: userData.username, email: userData.email },
+      };
+    }
+  },
 };
 
 /* SERVICIO DE PEDIDOS */

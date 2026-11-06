@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, Eye } from "lucide-react";
+import { ShoppingBag, Eye, Check } from "lucide-react";
 import { Badge } from "@/components/Badge";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
 
 export function ProductCard({
   mueble,
@@ -15,6 +17,9 @@ export function ProductCard({
 }) {
   const initialColor = mueble?.colores?.[0] || "#B2967D";
   const [activeColor, setActiveColor] = useState(initialColor);
+  const [agregadoReciente, setAgregadoReciente] = useState(false);
+  const { addToCart } = useCart();
+  const toast = useToast();
 
   if (!mueble) return null;
 
@@ -149,16 +154,34 @@ export function ProductCard({
             Ver Detalle
           </Link>
 
-          {onAddToCart && (
-            <button
-              type="button"
-              onClick={() => onAddToCart(mueble, activeColor)}
-              aria-label={`Agregar ${nombre} al carrito`}
-              className="p-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso shadow-2xs transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer active:scale-95"
-            >
+          <button
+            type="button"
+            disabled={stock === 0}
+            onClick={() => {
+              if (stock === 0) return;
+              if (onAddToCart) {
+                onAddToCart(mueble, activeColor);
+              } else {
+                addToCart(mueble, 1, activeColor);
+                toast.success(`"${nombre}" se agregó al carrito de compras.`);
+              }
+              setAgregadoReciente(true);
+              setTimeout(() => setAgregadoReciente(false), 1500);
+            }}
+            title={stock === 0 ? "Sin stock disponible" : `Agregar ${nombre} al carrito`}
+            aria-label={`Agregar ${nombre} al carrito`}
+            className={`p-2.5 rounded-xl shadow-2xs transition-all min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+              agregadoReciente
+                ? "bg-emerald-600 text-white"
+                : "bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso"
+            }`}
+          >
+            {agregadoReciente ? (
+              <Check className="w-4 h-4" />
+            ) : (
               <ShoppingBag className="w-4 h-4" />
-            </button>
-          )}
+            )}
+          </button>
         </div>
       </div>
     </article>

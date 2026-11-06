@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext";
 import {
   Sun,
   Moon,
@@ -13,7 +14,6 @@ import {
   User,
   Menu,
   X,
-  Search,
   LayoutDashboard,
   ChevronDown,
   ShoppingBag,
@@ -23,17 +23,16 @@ import {
   Grid,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Buscador } from "@/components/Buscador";
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
+  const { totalItems, openCart } = useCart();
   const isAuth = mounted && isAuthenticated;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
-  const [searchOpen, setSearchOpen] = useState(false);
   const handleLogout = () => {
     logout();
     setMobileMenuOpen(false);
@@ -43,12 +42,11 @@ export function Navbar() {
   };
   const [prevPathname, setPrevPathname] = useState(pathname);
 
-  // Cerrar menu movil y buscador al navegar
+  // Cerrar menu movil al navegar
   if (prevPathname !== pathname) {
     setPrevPathname(pathname);
     setMobileMenuOpen(false);
     setActiveDropdown(null);
-    setSearchOpen(false);
   }
 
   // Escape y scroll lock
@@ -57,7 +55,6 @@ export function Navbar() {
       if (e.key === "Escape") {
         setMobileMenuOpen(false);
         setActiveDropdown(null);
-        setSearchOpen(false);
       }
     };
     if (mobileMenuOpen) {
@@ -187,10 +184,10 @@ export function Navbar() {
       {/* Barra de Anuncio Arriba de la navbar principal */}
       <div
         aria-label="Venta telefónica y WhatsApp"
-        className="bg-espresso text-linen text-[11px] sm:text-xs font-normal py-2 px-4 text-center tracking-wide border-b border-[#38261e] dark:border-border transition-colors"
+        className="bg-espresso text-linen text-[10px] sm:text-[11px] font-normal py-1.5 sm:py-2 px-3 sm:px-4 text-center tracking-wide border-b border-[#38261e] dark:border-border transition-colors truncate"
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between sm:justify-center gap-4 text-[11px]">
-          <span className="tracking-wide">
+        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-4 truncate">
+          <span className="tracking-wide truncate">
             ESCRIBINOS POR WHATSAPP AL{" "}
             <strong className="font-semibold text-camel hover:underline cursor-pointer">
               (+54 9 11) 6668-1012
@@ -208,14 +205,14 @@ export function Navbar() {
         aria-label="Navegación principal"
         className="w-full border-b border-border/80 bg-background/95 dark:bg-[#18120e]/95 backdrop-blur-md shadow-xs"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-6">
           {/* Logo de Home & Deco */}
           <Link
             href="/"
             aria-label="Home & Deco — Inicio"
-            className="flex items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel rounded-xl p-1 shrink-0"
+            className="flex items-center gap-2 sm:gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel rounded-xl p-1 min-w-0 shrink"
           >
-            <div className="relative h-11 w-11 overflow-hidden rounded-xl bg-linen dark:bg-card p-1 border border-khaki/50 dark:border-border transition-transform group-hover:scale-105 shrink-0 shadow-2xs">
+            <div className="relative h-9 w-9 sm:h-11 sm:w-11 overflow-hidden rounded-xl bg-linen dark:bg-card p-1 border border-khaki/50 dark:border-border transition-transform group-hover:scale-105 shrink-0 shadow-2xs">
               <Image
                 src="/logo-icon.jpg"
                 alt="Isotipo Home & Deco"
@@ -225,11 +222,11 @@ export function Navbar() {
                 className="object-contain"
               />
             </div>
-            <div>
-              <span className="font-extrabold text-xl sm:text-2xl tracking-wider block leading-none text-espresso dark:text-linen font-sans">
+            <div className="min-w-0">
+              <span className="font-extrabold text-base sm:text-xl md:text-2xl tracking-wider block leading-none text-espresso dark:text-linen font-sans truncate">
                 HOME & DECO
               </span>
-              <span className="text-[9px] tracking-[0.28em] uppercase text-cocoa dark:text-camel font-semibold block mt-1">
+              <span className="text-[8px] sm:text-[9px] tracking-[0.18em] sm:tracking-[0.28em] uppercase text-cocoa dark:text-camel font-semibold block mt-0.5 sm:mt-1 truncate">
                 Mueblería & Diseño
               </span>
             </div>
@@ -305,35 +302,21 @@ export function Navbar() {
           </div>
 
           {/* Iconos a la Derecha */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Buscador */}
-            {searchOpen ? (
-              <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2 duration-200">
-                <Buscador
-                  className="w-48 sm:w-64 md:w-72"
-                  placeholder="Buscar muebles..."
-                  clearOtherFilters
-                  onSearch={() => setSearchOpen(false)}
-                />
-                <button
-                  onClick={() => setSearchOpen(false)}
-                  type="button"
-                  aria-label="Cerrar buscador"
-                  className="p-2.5 rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer shadow-2xs"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setSearchOpen(true)}
-                type="button"
-                aria-label="Buscar muebles en el catálogo"
-                className="p-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel shadow-2xs cursor-pointer"
-              >
-                <Search className="w-4 h-4 text-cocoa dark:text-khaki" aria-hidden="true" />
-              </button>
-            )}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Carrito de Compras */}
+            <button
+              onClick={openCart}
+              type="button"
+              aria-label={`Abrir carrito de compras (${totalItems} artículos)`}
+              className="relative p-2 sm:p-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted transition-colors min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel shadow-2xs cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4 text-cocoa dark:text-camel" aria-hidden="true" />
+              {mounted && totalItems > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] sm:min-w-[20px] h-4.5 sm:h-5 px-1 rounded-full bg-espresso text-linen dark:bg-camel dark:text-espresso text-[10px] sm:text-[11px] font-extrabold flex items-center justify-center border-2 border-background animate-in zoom-in duration-200">
+                  {totalItems > 99 ? "99+" : totalItems}
+                </span>
+              )}
+            </button>
 
             {/* Modo Claro / Oscuro */}
             <button
@@ -345,7 +328,7 @@ export function Navbar() {
                   ? `Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`
                   : "Cambiar tema"
               }
-              className="p-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel cursor-pointer shadow-2xs"
+              className="p-2 sm:p-2.5 rounded-lg border border-border bg-card text-foreground hover:bg-muted transition-colors min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-camel cursor-pointer shadow-2xs"
             >
               {mounted && theme === "dark" ? (
                 <Sun className="w-4 h-4 text-amber-400" aria-hidden="true" />
@@ -356,7 +339,7 @@ export function Navbar() {
 
             {/* Sesion */}
             {isAuth ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <Link
                   href="/dashboard"
                   aria-label={`Perfil de ${user?.username}`}
@@ -377,7 +360,7 @@ export function Navbar() {
                   type="button"
                   aria-label="Cerrar sesión"
                   title="Cerrar Sesión"
-                  className="p-2.5 rounded-lg border border-border bg-card text-cocoa hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+                  className="p-2 sm:p-2.5 rounded-lg border border-border bg-card text-cocoa hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -398,7 +381,7 @@ export function Navbar() {
               type="button"
               aria-label={mobileMenuOpen ? "Cerrar menú móvil" : "Abrir menú móvil"}
               aria-expanded={mobileMenuOpen}
-              className="lg:hidden p-2.5 rounded-lg border border-border bg-card text-espresso dark:text-linen hover:bg-muted transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="lg:hidden p-2 sm:p-2.5 rounded-lg border border-border bg-card text-espresso dark:text-linen hover:bg-muted transition-colors min-h-[40px] min-w-[40px] sm:min-h-[44px] sm:min-w-[44px] flex items-center justify-center cursor-pointer"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -411,19 +394,36 @@ export function Navbar() {
         <div
           role="dialog"
           aria-modal="true"
-          className="lg:hidden fixed inset-0 top-[115px] z-50 bg-background/98 dark:bg-[#18120e]/98 backdrop-blur-lg p-6 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200 flex flex-col justify-between"
+          className="lg:hidden fixed inset-0 top-[95px] sm:top-[112px] z-50 bg-background/98 dark:bg-[#18120e]/98 backdrop-blur-lg p-5 sm:p-6 pb-28 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-200 flex flex-col justify-between"
         >
           <div className="space-y-5">
-            {/* Buscador Móvil */}
+            {/* Acceso Carrito Móvil */}
             <div>
-              <span className="text-[11px] font-bold uppercase tracking-widest text-camel block mb-2">
-                Buscar en Catálogo
-              </span>
-              <Buscador
-                placeholder="Buscar por nombre, madera o estilo..."
-                clearOtherFilters
-                onSearch={() => setMobileMenuOpen(false)}
-              />
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openCart();
+                }}
+                className="w-full flex items-center justify-between p-3.5 rounded-xl bg-card border border-border text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-lg bg-camel/15 text-cocoa dark:text-camel">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-bold text-sm block text-espresso dark:text-linen">
+                      Mi Carrito
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {totalItems} {totalItems === 1 ? "artículo" : "artículos"}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs font-extrabold text-camel">
+                  Abrir ›
+                </span>
+              </button>
             </div>
 
             <span className="text-[11px] font-bold uppercase tracking-widest text-camel block">

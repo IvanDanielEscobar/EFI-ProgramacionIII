@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Save, Sparkles, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, AlertCircle, Image as ImageIcon } from "lucide-react";
 import {
   mueblesService,
   categoriasService,
@@ -36,6 +36,7 @@ export default function EditarMueblePage({ params }) {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(muebleSchema),
@@ -46,6 +47,7 @@ export default function EditarMueblePage({ params }) {
       precio: "",
       stock: "1",
       color: "Madera Natural",
+      imagen: "",
       alto: "80",
       ancho: "120",
       profundidad: "60",
@@ -54,6 +56,8 @@ export default function EditarMueblePage({ params }) {
     },
     mode: "onTouched",
   });
+
+  const imagenActual = watch("imagen");
 
   // Cargar categorías, materiales y datos iniciales del mueble (si es edición)
   useEffect(() => {
@@ -86,6 +90,7 @@ export default function EditarMueblePage({ params }) {
             precio: String(mueble.precio ?? ""),
             stock: String(mueble.stock ?? "0"),
             color: mueble.color || "Madera Natural",
+            imagen: mueble.raw?.imagen || (typeof mueble.imagen === "string" && mueble.imagen.startsWith("http") ? mueble.imagen : ""),
             alto: String(mueble.alto ?? "80"),
             ancho: String(mueble.ancho ?? "120"),
             profundidad: String(mueble.profundidad ?? "60"),
@@ -102,6 +107,7 @@ export default function EditarMueblePage({ params }) {
               precio: "",
               stock: "1",
               color: "Madera Natural",
+              imagen: "",
               alto: "80",
               ancho: "120",
               profundidad: "60",
@@ -298,6 +304,45 @@ export default function EditarMueblePage({ params }) {
               error={errors.color?.message}
               {...register("color")}
             />
+          </div>
+
+          {/* Imagen */}
+          <div className="space-y-3 p-4 sm:p-5 rounded-2xl bg-linen/40 dark:bg-muted/20 border border-border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-espresso dark:text-linen">
+                Imagen del Mueble
+              </label>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              <div className="flex-1 w-full space-y-1">
+                <Input
+                  placeholder="https://ejemplo.com/imagenes/mueble.jpg"
+                  error={errors.imagen?.message}
+                  {...register("imagen")}
+                />
+              </div>
+
+              {/* Vista previa miniatura */}
+              <div className="relative w-28 h-20 rounded-xl border border-border bg-card overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                {imagenActual && imagenActual.trim() !== "" ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={imagenActual}
+                    alt="Vista previa de imagen"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="text-center p-2 text-muted-foreground space-y-1">
+                    <ImageIcon className="w-5 h-5 mx-auto opacity-50" />
+                    <span className="text-[10px] block leading-tight font-medium">Sin imagen</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Grid de Medidas en cm (Números Positivos) */}

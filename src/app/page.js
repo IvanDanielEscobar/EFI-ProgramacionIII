@@ -224,11 +224,11 @@ export default function HomePage() {
         aria-label="Recomendaciones destacadas"
         className="relative w-full overflow-hidden bg-espresso text-linen"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 min-h-[580px] lg:min-h-[660px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 h-auto md:min-h-[520px] lg:min-h-[580px] xl:min-h-[640px]">
           {heroRecomendados.map((item, idx) => (
             <div
               key={item.id}
-              className={`relative group overflow-hidden flex flex-col justify-end p-8 sm:p-12 lg:p-16 border-b md:border-b-0 ${
+              className={`relative group overflow-hidden flex flex-col justify-end p-6 sm:p-10 lg:p-14 min-h-[380px] sm:min-h-[440px] md:min-h-full border-b md:border-b-0 ${
                 idx === 0 ? "md:border-r border-[#3b2b22] dark:border-border/60" : ""
               }`}
             >
@@ -246,17 +246,17 @@ export default function HomePage() {
               </div>
 
               {/* Contenido Flotante */}
-              <div className="relative z-10 space-y-3 max-w-lg">
-                <span className="inline-block text-[11px] font-bold tracking-[0.25em] uppercase text-camel">
+              <div className="relative z-10 space-y-2.5 sm:space-y-3 max-w-lg">
+                <span className="inline-block text-[10px] sm:text-[11px] font-bold tracking-[0.25em] uppercase text-camel">
                   {item.etiqueta}
                 </span>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-linen leading-tight font-sans">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-linen leading-tight font-sans break-words">
                   {item.titulo}
                 </h2>
-                <p className="text-sm sm:text-base text-khaki/90 line-clamp-2 font-normal leading-relaxed">
+                <p className="text-xs sm:text-sm md:text-base text-khaki/90 line-clamp-2 font-normal leading-relaxed">
                   {item.subtitulo}
                 </p>
-                <div className="pt-2">
+                <div className="pt-1.5 sm:pt-2">
                   <Link
                     href={item.href}
                     className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold tracking-wider uppercase text-linen border-b-2 border-camel/80 pb-1 hover:border-camel hover:text-camel transition-all group-hover:translate-x-1"
@@ -271,10 +271,10 @@ export default function HomePage() {
         </div>
 
         {/* Boton Central */}
-        <div className="absolute left-1/2 bottom-2 -translate-x-1/2 z-20 hidden md:block">
+        <div className="absolute left-1/2 bottom-4 sm:bottom-6 md:bottom-8 -translate-x-1/2 z-20 whitespace-nowrap">
           <Link
             href="/catalogo"
-            className="px-6 py-2.5 rounded-full bg-linen/95 hover:bg-linen text-espresso text-xs font-bold tracking-widest uppercase backdrop-blur-md border border-khaki/60 shadow-2xl transition-all hover:scale-105 inline-flex items-center gap-2"
+            className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-linen/95 hover:bg-linen text-espresso text-[11px] sm:text-xs font-bold tracking-widest uppercase backdrop-blur-md border border-khaki/60 shadow-2xl transition-all hover:scale-105 inline-flex items-center gap-1.5 sm:gap-2"
           >
             <span>CATALOGO COMPLETO</span>
             <span>&gt;</span>

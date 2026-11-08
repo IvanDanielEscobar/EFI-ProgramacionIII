@@ -28,7 +28,7 @@ function LoginFormContent() {
   const redirectTarget = searchParams.get("redirect") || "/dashboard";
   const errorParam = searchParams.get("error");
 
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, isAuthenticated, user, token } = useAuth();
   const toast = useToast();
 
   const [mounted, setMounted] = useState(false);
@@ -56,16 +56,16 @@ function LoginFormContent() {
     mode: "onTouched",
   });
 
-  // Si ya está autenticado, redirigir automáticamente según su rol
+  // Si ya está autenticado, redirigir según su rol
   useEffect(() => {
     if (mounted && isAuthenticated) {
-      const destino = user?.es_empleado ? redirectTarget : "/";
+      const destino = user?.es_empleado ? "/dashboard" : "/";
       const timeout = setTimeout(() => {
         router.push(destino);
-      }, 1200);
+      }, 300);
       return () => clearTimeout(timeout);
     }
-  }, [mounted, isAuthenticated, user, redirectTarget, router]);
+  }, [mounted, isAuthenticated, user, router]);
 
   const onSubmit = async (data) => {
     setApiError("");
@@ -77,11 +77,8 @@ function LoginFormContent() {
         toast.success(
           `¡Bienvenido/a, ${result.user?.username || data.username}! Inicio de sesión exitoso.`
         );
-        if (result.user?.es_empleado) {
-          router.push(redirectTarget);
-        } else {
-          router.push("/");
-        }
+        const destino = result.user?.es_empleado ? "/dashboard" : "/";
+        router.push(destino);
       } else {
         setApiError(
           result?.error || "Credenciales inválidas. Verificá tu usuario y contraseña."
@@ -158,7 +155,7 @@ function LoginFormContent() {
             </p>
             <div className="pt-2">
               <Link
-                href={user?.es_empleado ? redirectTarget : "/"}
+                href={user?.es_empleado ? "/dashboard" : "/"}
                 className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-espresso text-linen dark:bg-camel dark:text-espresso text-xs font-semibold uppercase tracking-wider"
               >
                 Continuar

@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Archive,
   RefreshCw,
+  Eye,
 } from "lucide-react";
 import { mueblesService } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
@@ -285,10 +286,14 @@ export default function DashboardMueblesPage() {
                     key={m.id}
                     className="hover:bg-muted/30 transition-colors group"
                   >
-                    {/* Foto y Nombre */}
+                    {/* Foto y Nombre*/}
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-linen dark:bg-espresso/30 border border-border shrink-0">
+                      <Link
+                        href={`/dashboard/muebles/${m.id}`}
+                        className="flex items-center gap-3 group/item cursor-pointer"
+                        title="Ver detalle del mueble en modo empleado"
+                      >
+                        <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-linen dark:bg-espresso/30 border border-border shrink-0 group-hover/item:border-camel transition-colors">
                           <Image
                             src={m.imagen}
                             alt={m.nombre}
@@ -298,14 +303,14 @@ export default function DashboardMueblesPage() {
                           />
                         </div>
                         <div>
-                          <span className="font-bold text-espresso dark:text-linen block group-hover:text-camel transition-colors">
+                          <span className="font-bold text-espresso dark:text-linen block group-hover/item:text-camel transition-colors">
                             {m.nombre}
                           </span>
                           <span className="text-[11px] text-muted-foreground font-mono">
                             ID: #{m.id}
                           </span>
                         </div>
-                      </div>
+                      </Link>
                     </td>
 
                     {/* Categoría */}
@@ -341,19 +346,28 @@ export default function DashboardMueblesPage() {
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
-                          href={`/catalogo/${m.id}`}
-                          target="_blank"
-                          title="Ver en la tienda"
+                          href={`/dashboard/muebles/${m.id}`}
+                          title="Ver detalle en modo empleado"
                           className="p-2 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-espresso dark:hover:text-linen transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <Eye className="w-3.5 h-3.5" />
                         </Link>
 
                         <Link
                           href={`/dashboard/muebles/editar/${m.id}`}
+                          title="Editar pieza"
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-linen dark:bg-muted text-espresso dark:text-linen hover:bg-espresso hover:text-linen dark:hover:bg-camel dark:hover:text-espresso font-semibold text-xs tracking-wider transition-colors min-h-[36px]"
                         >
                           <Pencil className="w-3.5 h-3.5"/>
+                        </Link>
+
+                        <Link
+                          href={`/catalogo/${m.id}`}
+                          target="_blank"
+                          title="Ver en la tienda pública"
+                          className="p-2 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-espresso dark:hover:text-linen transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
                         </Link>
 
                         {m.activo !== false && !m.eliminado_logico && (

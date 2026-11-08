@@ -71,7 +71,7 @@ export default async function DashboardPage() {
       icono: Layers,
       detalle: "Categorías en el sistema",
       color: "text-indigo-400",
-      href: "/catalogo",
+      href: "/dashboard/muebles",
     },
     {
       titulo: "Sucursales",
@@ -114,28 +114,28 @@ export default async function DashboardPage() {
           </h1>
         </div>
 
-        <Link
-          href="/catalogo"
-          className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-semibold text-sm transition-all min-h-[44px] shadow-xs"
-        >
-          <span>Ver Catálogo</span>
-          <ArrowUpRight className="w-4 h-4" />
-        </Link>
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Link
+            href="/dashboard/muebles"
+            className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-semibold text-xs tracking-wider uppercase transition-all shadow-xs min-h-[44px]"
+          >
+            <span>Ver Catálogo</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </Link>
+
+          <Link
             href="/dashboard/muebles/editar/nuevo"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-semibold text-xs tracking-wider uppercase transition-all shadow-xs min-h-[44px]"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-all min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
             <span>Nuevo Mueble</span>
           </Link>
 
           <Link
-            href="/catalogo"
-            target="_blank"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground transition-colors min-h-[44px]"
+            href="/"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
           >
-            <span>Ver Tienda</span>
+            <span>Ir a la Tienda</span>
             <ArrowUpRight className="w-3.5 h-3.5 text-camel" />
           </Link>
         </div>

@@ -50,7 +50,7 @@ export default async function SucursalesPage() {
           <div className="max-w-3xl mx-auto">
             <Alert
               variant="warning"
-              title="Aviso del Servidor"
+              title="Aviso de Sucursales"
               action={
                 <Link
                   href="/sucursales"
@@ -60,7 +60,7 @@ export default async function SucursalesPage() {
                 </Link>
               }
             >
-              {error} (Compruebe que el servicio de backend en Render esté activo).
+              Tuvimos una dificultad al cargar los locales. Por favor, intentá nuevamente en unos instantes.
             </Alert>
           </div>
         )}
@@ -69,8 +69,8 @@ export default async function SucursalesPage() {
         {!error && sucursales.length === 0 && (
           <EmptyState
             icon={Store}
-            title="No hay sucursales registradas"
-            description="En este momento no se encontraron puntos de atención disponibles en la base de datos."
+            title="No hay sucursales disponibles"
+            description="En este momento no se encontraron puntos de atención disponibles. Podés consultarnos por WhatsApp."
             action={
               <Link
                 href="/"

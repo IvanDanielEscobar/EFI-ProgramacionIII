@@ -76,7 +76,7 @@ export default async function CatalogoPage({ searchParams }) {
         {error && (
           <Alert
             variant="warning"
-            title="Aviso del Servidor"
+            title="Aviso del Catálogo"
             action={
               <Link
                 href="/catalogo"
@@ -86,7 +86,7 @@ export default async function CatalogoPage({ searchParams }) {
               </Link>
             }
           >
-            {error} (Compruebe que el servicio de backend en Render esté activo).
+            Tuvimos una dificultad al conectar con el inventario de muebles. Por favor, intentá nuevamente en unos instantes.
           </Alert>
         )}
 

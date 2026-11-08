@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Desactivar header que revela version del framework
   // Desactivar header que revela versión del framework
   poweredByHeader: false,
 

@@ -71,6 +71,16 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Sincronizar cookies para el middleware
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (token && user) {
+        document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax;`;
+        document.cookie = `user_role=${user.rol || "CLIENTE"}; path=/; max-age=86400; SameSite=Lax;`;
+      }
+    }
+  }, [token, user]);
+
   const login = async (username, password) => {
     setIsLoading(true);
     setError(null);

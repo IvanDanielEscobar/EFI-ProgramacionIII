@@ -1,8 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { MapPin, Mail, Clock, Phone, ArrowUpRight, ShieldCheck, Truck, CreditCard } from "lucide-react";
 
 export function Footer() {
+  const pathname = usePathname();
+
+  // En el panel interno de administración (dashboard) no se muestra el footer del ecommerce
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
   return (
     <footer className="w-full border-t border-border bg-card text-foreground mt-auto transition-colors duration-200 pb-16 lg:pb-0">
       {/* Publicidad */}

@@ -85,5 +85,17 @@ describe("muebleSchema", () => {
       expect(conImagen.data.imagen).toBe("https://ejemplo.com/muebles/mesa.jpg");
     }
   });
+
+  it("permite registrar un mueble pasando un archivo de imagen", () => {
+    const mockFile = { name: "foto.png", size: 1024, type: "image/png" };
+    const conArchivo = muebleSchema.safeParse({
+      ...muebleValido,
+      imagen: mockFile,
+    });
+    expect(conArchivo.success).toBe(true);
+    if (conArchivo.success) {
+      expect(conArchivo.data.imagen).toEqual(mockFile);
+    }
+  });
 });
 

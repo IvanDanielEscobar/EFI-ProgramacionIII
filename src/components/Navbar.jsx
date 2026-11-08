@@ -110,6 +110,16 @@ export function Navbar() {
     };
   }, [mobileMenuOpen]);
 
+
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
+  // En el panel interno de administración (dashboard) no se muestra la barra del ecommerce
+  if (pathname?.startsWith("/dashboard")) {
+    return null;
+  }
+
   const categorias = [
     {
       nombre: "Living",

@@ -74,11 +74,7 @@ export const muebleSchema = z.object({
     .optional()
     .or(z.literal("")),
 
-  imagen: z
-    .string()
-    .trim()
-    .optional()
-    .or(z.literal("")),
+  imagen: z.any().optional(),
 
   descripcion: z
     .string()

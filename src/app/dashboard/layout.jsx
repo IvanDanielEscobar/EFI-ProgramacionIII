@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import {
   LayoutDashboard,
   Armchair,
@@ -13,12 +14,18 @@ import {
   ShieldAlert,
   LogOut,
   LogIn,
+  Sun,
+  Moon,
 } from "lucide-react";
+
+const emptySubscribe = () => () => {};
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const esEmpleadoOAdmin =
     Boolean(user?.es_empleado) ||
@@ -26,10 +33,10 @@ export default function DashboardLayout({ children }) {
     user?.rol === "EMPLEADO";
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (mounted && !isLoading && !isAuthenticated) {
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [isLoading, isAuthenticated, pathname, router]);
+  }, [mounted, isLoading, isAuthenticated, pathname, router]);
 
   const menuItems = [
     { nombre: "Resumen", href: "/dashboard", icono: LayoutDashboard },
@@ -38,8 +45,8 @@ export default function DashboardLayout({ children }) {
     { nombre: "Sucursales", href: "/dashboard/sucursales", icono: Store },
   ];
 
-  // Estado de Carga (evita recargas mientras lee credenciales)
-  if (isLoading) {
+  // Durante la carga o antes del montaje inicial, renderizar estado de carga para garantizar paridad SSR/Cliente
+  if (!mounted || isLoading) {
     return (
       <div className="flex-1 min-h-[70vh] flex flex-col items-center justify-center p-6 space-y-4 bg-background">
         <div className="w-10 h-10 border-3 border-camel border-t-transparent rounded-full animate-spin" />
@@ -133,89 +140,6 @@ export default function DashboardLayout({ children }) {
     );
   }
 
-  // Usuario sin AUTORIZACION 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex-1 min-h-[75vh] flex items-center justify-center p-4 bg-background">
-        <div className="max-w-md w-full p-8 rounded-3xl bg-card border border-border text-center space-y-4 shadow-sm">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
-            <ShieldAlert className="w-7 h-7" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">
-              Autenticación Requerida
-            </span>
-            <h2 className="text-xl font-bold text-espresso dark:text-linen">
-              Acceso Restringido
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Para acceder al panel administrativo de Home & Deco debés iniciar sesión con una cuenta de personal autorizado.
-          </p>
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href={`/login?redirect=${encodeURIComponent(pathname)}`}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-semibold text-xs tracking-wider uppercase transition-all shadow-xs min-h-[42px]"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Iniciar Sesión</span>
-            </Link>
-            <Link
-              href="/"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors min-h-[42px]"
-            >
-              <span>Ir a la Tienda</span>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Usuario Autenticado pero SIN Permisos
-  if (!esEmpleadoOAdmin) {
-    return (
-      <div className="flex-1 min-h-[75vh] flex items-center justify-center p-4 bg-background">
-        <div className="max-w-lg w-full p-8 rounded-3xl bg-card border border-border text-center space-y-4 shadow-md">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center">
-            <ShieldAlert className="w-7 h-7" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-red-600 dark:text-red-400">
-              Código 403 • Prohibido
-            </span>
-            <h2 className="text-xl font-bold text-espresso dark:text-linen">
-              Área Exclusiva para Personal
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Iniciaste sesión como <strong className="text-espresso dark:text-linen">{user?.username}</strong> con perfil de <strong className="text-espresso dark:text-linen">{user?.rol || "CLIENTE"}</strong>. Las herramientas de inventario, stock y gestión operativa están reservadas exclusivamente para empleados y administradores.
-          </p>
-          <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-espresso hover:bg-cocoa text-linen dark:bg-camel dark:hover:bg-khaki dark:text-espresso font-semibold text-xs tracking-wider uppercase transition-all shadow-xs min-h-[42px]"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Volver a la Tienda</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                logout();
-                router.push("/login");
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-semibold transition-colors min-h-[42px] cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Cerrar Sesión</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // 4. Usuario AUTORIZADO 
   return (
     <div className="flex-1 flex flex-col md:flex-row bg-background">
@@ -236,14 +160,28 @@ export default function DashboardLayout({ children }) {
               </h2>
             </div>
 
-            {/* Link a Tienda en mobile */}
-            <Link
-              href="/"
-              className="md:hidden flex items-center gap-1.5 text-xs font-semibold text-cocoa dark:text-khaki hover:text-espresso dark:hover:text-linen px-2.5 py-1.5 rounded-lg border border-border"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Tienda</span>
-            </Link>
+            {/* Acciones superiores en mobile: Tema e ir a Tienda */}
+            <div className="md:hidden flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                title={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
+                className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                ) : (
+                  <Moon className="w-3.5 h-3.5 text-cocoa" />
+                )}
+              </button>
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 text-xs font-semibold text-cocoa dark:text-khaki hover:text-espresso dark:hover:text-linen px-2.5 py-1.5 rounded-lg border border-border"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Tienda</span>
+              </Link>
+            </div>
           </div>
 
           {/* Menu de Navegación */}
@@ -298,18 +236,33 @@ export default function DashboardLayout({ children }) {
               <span>Tienda</span>
             </Link>
 
-            <button
-              type="button"
-              onClick={() => {
-                logout();
-                router.push("/login");
-              }}
-              title="Cerrar sesión"
-              className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Salir</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                title={`Cambiar a modo ${theme === "dark" ? "claro" : "oscuro"}`}
+                className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                ) : (
+                  <Moon className="w-3.5 h-3.5 text-cocoa" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  router.push("/login");
+                }}
+                title="Cerrar sesión"
+                className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Salir</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>

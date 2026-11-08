@@ -113,7 +113,7 @@ export default async function CategoriasPage() {
         {error && (
           <Alert
             variant="warning"
-            title="Aviso del Servidor"
+            title="Aviso de Categorías"
             action={
               <Link
                 href="/catalogo/categorias"
@@ -123,7 +123,7 @@ export default async function CategoriasPage() {
               </Link>
             }
           >
-            {error} (Compruebe que el backend esté en ejecución).
+            Tuvimos una dificultad al cargar los ambientes. Por favor, intentá nuevamente en unos instantes.
           </Alert>
         )}
 

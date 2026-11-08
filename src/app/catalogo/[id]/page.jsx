@@ -50,7 +50,7 @@ export default async function DetalleProductoPage({ params }) {
         <div className="max-w-xl mx-auto space-y-6 text-center">
           <Alert
             variant="warning"
-            title="Aviso del servidor"
+            title="Aviso del Producto"
             action={
               <Link
                 href="/catalogo"

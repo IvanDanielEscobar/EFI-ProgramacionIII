@@ -270,16 +270,30 @@ export const mueblesService = {
       precio = 0, stock = 1, color = "Madera Natural",
     } = formData;
 
+    const isFile = typeof File !== "undefined" && imagen instanceof File;
+    let body;
+
+    if (isFile) {
+      body = new FormData();
+      body.append("nombre", nombre);
+      if (descripcion) body.append("descripcion", descripcion);
+      body.append("categoria", String(categoria));
+      body.append("material", String(material));
+      body.append("imagen", imagen);
+    } else {
+      body = JSON.stringify({
+        nombre,
+        descripcion: descripcion || "",
+        categoria: Number(categoria),
+        material: Number(material),
+        ...(typeof imagen === "string" && imagen.trim().startsWith("http") ? { imagen: imagen.trim() } : {}),
+      });
+    }
+
     const muebleCreado = await apiFetch("/muebles/", {
       method: "POST",
       token,
-      body: JSON.stringify({
-        nombre,
-        descripcion,
-        categoria: Number(categoria),
-        material: Number(material),
-        imagen: imagen ? imagen : null,
-      }),
+      body,
     });
 
     let caracteristicas = null;
@@ -312,17 +326,32 @@ export const mueblesService = {
       caracteristica_id, alto, ancho, profundidad, peso, precio, stock, color,
     } = formData;
 
-    const mueblePayload = {};
-    if (nombre !== undefined) mueblePayload.nombre = nombre;
-    if (descripcion !== undefined) mueblePayload.descripcion = descripcion;
-    if (categoria !== undefined) mueblePayload.categoria = Number(categoria);
-    if (material !== undefined) mueblePayload.material = Number(material);
-    if (imagen !== undefined) mueblePayload.imagen = imagen ? imagen : null;
+    const isFile = typeof File !== "undefined" && imagen instanceof File;
+    let body;
+
+    if (isFile) {
+      body = new FormData();
+      if (nombre !== undefined) body.append("nombre", nombre);
+      if (descripcion !== undefined) body.append("descripcion", descripcion);
+      if (categoria !== undefined) body.append("categoria", String(categoria));
+      if (material !== undefined) body.append("material", String(material));
+      body.append("imagen", imagen);
+    } else {
+      const mueblePayload = {};
+      if (nombre !== undefined) mueblePayload.nombre = nombre;
+      if (descripcion !== undefined) mueblePayload.descripcion = descripcion;
+      if (categoria !== undefined) mueblePayload.categoria = Number(categoria);
+      if (material !== undefined) mueblePayload.material = Number(material);
+      if (typeof imagen === "string" && imagen.trim().startsWith("http")) {
+        mueblePayload.imagen = imagen.trim();
+      }
+      body = JSON.stringify(mueblePayload);
+    }
 
     const muebleActualizado = await apiFetch(`/muebles/${id}/`, {
       method: "PATCH",
       token,
-      body: JSON.stringify(mueblePayload),
+      body,
     });
 
     if (caracteristica_id) {
@@ -394,10 +423,74 @@ export const authService = {
     }),
 };
 
+/* SERVICIO DE METODOS DE PAGO */
+export const metodosPagoService = {
+  getAll: (token = null) =>
+    apiFetch("/metodos-pago/", { token }).then((d) => (Array.isArray(d) ? d : d.results || [])),
+  getById: (id, token = null) => apiFetch(`/metodos-pago/${id}/`, { token }),
+};
+
+/* SERVICIO DE USUARIOS */
+export const usuariosService = {
+  getPerfil: (token = null) => apiFetch("/usuarios/perfil/", { token }),
+};
+
 /* SERVICIO DE PEDIDOS */
 export const pedidosService = {
   getAll: (token = null) =>
     apiFetch("/pedidos/", { token }).then((d) => (Array.isArray(d) ? d : d.results || [])),
   getById: (id, token = null) => apiFetch(`/pedidos/${id}/`, { token }),
+  create: (pedidoData, token = null) =>
+    apiFetch("/pedidos/", {
+      method: "POST",
+      token,
+      body: JSON.stringify(pedidoData),
+    }),
+  createDetalle: (detalleData, token = null) =>
+    apiFetch("/detalles-pedido/", {
+      method: "POST",
+      token,
+      body: JSON.stringify(detalleData),
+    }),
+  /* Crea el pedido y asocia todos sus detalles en una sola llamada orquestada */
+  async crearPedidoCompleto(
+    { clienteId, sucursalId = 1, metodoPagoId = 1, direccion = "", notas = "", items = [] },
+    token = null
+  ) {
+    const pedidoCreado = await apiFetch("/pedidos/", {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        cliente: Number(clienteId),
+        sucursal: Number(sucursalId),
+        metodo_pago: Number(metodoPagoId),
+        direccion_entrega: direccion || "Retiro en Showroom Río Cuarto",
+        notas: notas || "Pedido generado desde la tienda web",
+      }),
+    });
+
+    const detallesCreados = [];
+    for (const it of items) {
+      try {
+        const detalle = await apiFetch("/detalles-pedido/", {
+          method: "POST",
+          token,
+          body: JSON.stringify({
+            pedido: pedidoCreado.id,
+            mueble: Number(it.id),
+            cantidad: Number(it.cantidad) || 1,
+          }),
+        });
+        detallesCreados.push(detalle);
+      } catch (errDetalle) {
+        console.warn(`No se pudo agregar el item ${it.nombre} al pedido:`, errDetalle);
+      }
+    }
+
+    return {
+      ...pedidoCreado,
+      detalles: detallesCreados,
+    };
+  },
   cancel: (id, token = null) => apiFetch(`/pedidos/${id}/`, { method: "DELETE", token }),
 };

@@ -40,7 +40,7 @@ La aplicación frontend fue desarrollada en **Next.js 16 ** y consume la API RES
 
 ## 👥 3. Integrantes del Equipo
 
-* **Iván Daniel Escobar** — `ivanescobar.tfr@gmail.com`
+* **Iván Daniel Escobar** — `i.escobar@itecriocuarto.org.ar`
 * **Jonatan Villavicencio** — `j.villavicencio@itecriocuarto.org.ar`
 * **Matías Ibarra** — `m.ibarra@itecriocuarto.org.ar`
 * **Santiago Garay** — `s.garay@itecriocuarto.org.ar`
